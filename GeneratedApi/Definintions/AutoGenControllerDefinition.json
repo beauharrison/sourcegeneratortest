@@ -1,0 +1,82 @@
+﻿{
+  "name": "AutoGen",
+  "controllerRoute": "[controller]",
+  "dependencies": [
+    {
+      "type": "GeneratedApi.TestService",
+      "name": "_TestService"
+    }
+  ],
+  "methods": [
+    {
+      "name": "GetUser",
+      "method": "get",
+      "methodRoute": null,
+      "async": false,
+      "queryParams": [
+        {
+          "type": "int",
+          "name": "times"
+        }
+      ],
+      "responseBodyType": {
+        "type": "#/model/GetUserResponseBody"
+      }
+    },
+    {
+      "name": "AddUser",
+      "method": "post",
+      "methodRoute": "user/add",
+      "async": false,
+      "queryParams": [],
+      "requestBodyType": {
+        "type": "#/model/AddUserRequestBody"
+      }
+    }
+  ],
+  "models": {
+    "GetUserResponseBody": {
+      "props": [
+        {
+          "type": "string",
+          "name": "name",
+          "required": true
+        },
+        {
+          "type": "int",
+          "name": "age",
+          "required": false
+        }
+      ]
+    },
+    "AddUserRequestBody": {
+      "props": [
+        {
+          "type": "#/model/UserModel",
+          "name": "name",
+          "required": true
+        }
+      ]
+    },
+    "UserModel": {
+      "props": [
+        {
+          "type": "System.Guid",
+          "name": "id"
+        },
+        {
+          "type": "string",
+          "name": "name"
+        },
+        {
+          "type": "int",
+          "name": "age"
+        },
+        {
+          "type": "int",
+          "name": "count"
+        }
+      ]
+    }
+  }
+}
