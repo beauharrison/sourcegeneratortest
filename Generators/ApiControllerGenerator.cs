@@ -23,168 +23,286 @@ namespace Generators
             {
                 ApiDefinition definition;
 
-                try
-                {
-                    string definitionString = File.ReadAllText(defFile.Path);
-                    definition = JsonConvert.DeserializeObject<ApiDefinition>(definitionString);
-                }
-                catch
-                {
-                    // TODO what?
-                    continue;                    
-                }
+                string definitionString = File.ReadAllText(defFile.Path);
+                definition = JsonConvert.DeserializeObject<ApiDefinition>(definitionString);
 
-                GenerateController(context, definition);
-                GenerateModels(context, definition);
+                var controllerClass = GenerateController(definition);
+                var modelClasses = GenerateModels(definition);
+
+                if (string.IsNullOrWhiteSpace(definition.Name)) throw new ArgumentException("Invalid definition name");
+
+                string controllerNamespaceName = $"{definition.Namespace}.Controllers";
+                string modelNamespaceName = $"{definition.Namespace}.Models";
+
+                // Controller
+                var controllerNamespace = new CodeGenNamespace(controllerNamespaceName);
+
+                controllerNamespace.Content.Add(controllerClass);
+                controllerNamespace.Usings.Add("System");
+                controllerNamespace.Usings.Add("System.Threading.Tasks");
+                controllerNamespace.Usings.Add("Microsoft.AspNetCore.Mvc");
+                controllerNamespace.Usings.Add("Microsoft.Extensions.DependencyInjection");
+                controllerNamespace.Usings.Add(definition.Namespace);
+                controllerNamespace.Usings.Add(modelNamespaceName);
+
+                context.Add(controllerNamespace, $"{definition.Name}Controller.cs");
+
+                // Models
+                foreach (CodeGenClass modelClass in modelClasses)
+                {
+                    var modelNamespace = new CodeGenNamespace(modelNamespaceName);
+                    modelNamespace.Content.Add(modelClass);
+                    context.Add(modelNamespace, $"{modelClass.Name}.cs");
+                }
             }
         }
 
         public void Initialize(GeneratorInitializationContext context)
         {
-#if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
-#endif
+            //if (!Debugger.IsAttached) { Debugger.Launch(); }
         }
 
-        private void GenerateController(GeneratorExecutionContext context, ApiDefinition definition)
+        private CodeGenClass GenerateController(ApiDefinition definition)
         {
+            if (definition is null) throw new ArgumentNullException(nameof(definition));
+
             var controllerClass = new CodeGenClass(
                     $"{definition.Name}Controller",
                     Scope.Public,
                     ClassType.Normal,
-                    new[] { "Microsoft.AspNetCore.Mvc.ControllerBase" });
+                    new[] { "ControllerBase" });
 
-            controllerClass.Attributes.Add(new CodeGenAttribute("Microsoft.AspNetCore.Mvc.ApiController", null));
+            // class comment
+            if (!string.IsNullOrWhiteSpace(definition.Description))
+                controllerClass.Comment = new CodeGenComment(definition.Description);
 
-            if (!string.IsNullOrWhiteSpace(definition.ControllerRoute))
-                controllerClass.Attributes.Add(new CodeGenAttribute("Microsoft.AspNetCore.Mvc.Route", new[] { $"\"{definition.ControllerRoute}\"" }));
+            // ApiController attribute
+            controllerClass.Attributes.Add(new CodeGenAttribute("ApiController"));
 
-            if (definition.Dependencies.Any())
-            {
-                var constructorStatements = new List<string>();
-                var constructorArguments = new List<string>();
 
-                foreach (var dependency in definition.Dependencies)
-                {
-                    constructorStatements.Add($"this.{dependency.Name} = {dependency.Name};");
-                    constructorArguments.Add($"{dependency.Type} {dependency.Name}");
+            // Route attribute
+            string controllerRoute = !string.IsNullOrWhiteSpace(definition.ControllerRoute) ? $"\"{definition.ControllerRoute}\"" : @"""[controller]""";
+            controllerClass.Attributes.Add(new CodeGenAttribute("Route", controllerRoute));
 
-                    controllerClass.Variables.Add(new CodeGenVariable(
-                        dependency.Name,
-                        dependency.Type,
-                        Scope.Private));
-                }
+            // Constructor and DI injected variables.
+            var constructorStatements = new List<string>();
+            var constructorParam = new List<string>();
+            var constructorParamComments = new Dictionary<string, string>();
+                       
+            constructorParam.Add("IServiceProvider serviceProvider");
+            constructorParamComments.Add("serviceProvider", "The service provider to access validators and handlers.");
+            constructorStatements.Add($"_ServiceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider))");
 
-                controllerClass.Constructors.Add(new CodeGenConstructor(
-                    controllerClass.Name,
-                    Scope.Public,
-                    null,
-                    constructorArguments.ToArray(),
-                    string.Join(Environment.NewLine, constructorStatements)));
-            }
+            controllerClass.Variables.Add(new CodeGenVariable(
+                "_ServiceProvider",
+                "IServiceProvider",
+                Scope.Private,
+                readOnly: true));
+
+            //foreach (ApiMethod method in definition.Methods)
+            //{
+            //    if (string.IsNullOrWhiteSpace(method.Name)) throw new ArgumentException("Invalid dependency name");
+
+            //    string methodValidatorName = $"{method.Name}Validator";
+            //    string methodHandlerName = $"{method.Name}Handler";
+
+            //    constructorParam.Add($"{methodValidatorName} {methodValidatorName}");
+            //    constructorParam.Add($"{methodHandlerName} {methodHandlerName}");
+
+            //    constructorStatements.Add($"this.{methodValidatorName} = {methodValidatorName};");
+            //    constructorStatements.Add($"this.{methodHandlerName} = {methodHandlerName};");
+
+            //    constructorParamComments.Add(methodValidatorName, $"Validator for the {method.Name} method.");
+            //    constructorParamComments.Add(methodHandlerName, $"Handler for the {method.Name} method.");
+
+            //    controllerClass.Variables.Add(new CodeGenVariable(
+            //        dependency.Name,
+            //        dependency.Type,
+            //        Scope.Private));
+            //}
 
             foreach (ApiMethod apiMethod in definition.Methods)
             {
-                // TODO requried attribute
-                IEnumerable<string> queryParams = apiMethod.QueryParams.Select(qp => $"[Microsoft.AspNetCore.Mvc.FromQuery] {ResolveModelType(qp.Type, true)} {qp.Name}");
-                string[] bodyParams = apiMethod.RequestBodyType != null
-                    ? new[] { $"[Microsoft.AspNetCore.Mvc.FromBody] {ResolveModelType(apiMethod.RequestBodyType.Type, true)} requestBody" }
-                    : new string[0];
-
-                var method = new CodeGenMethod(
-                    apiMethod.Name,
-                    apiMethod.Async
-                        ? "System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult>"
-                        : "Microsoft.AspNetCore.Mvc.IActionResult",
-                    Scope.Public,
-                    MethodType.Normal,
-                    null,
-                    queryParams.Concat(bodyParams).ToArray(),
-                    @"
-_TestService.Add(new GeneratedModels.UserModel { Name = ""bonus soda"" });
-return NoContent();");
-
-                var methodAttributeType = apiMethod.Method switch
-                {
-                    "get" => "Microsoft.AspNetCore.Mvc.HttpGet",
-                    "post" => "Microsoft.AspNetCore.Mvc.HttpPost",
-                    "put" => "Microsoft.AspNetCore.Mvc.HttpPut",
-                    "patch" => "Microsoft.AspNetCore.Mvc.HttpPatch",
-                    "delete" => "Microsoft.AspNetCore.Mvc.HttpDelete",
-                    _ => throw new Exception("Oh no!")
-                };
-
-                var methodAttributeRoute = !string.IsNullOrWhiteSpace(apiMethod.MethodRoute)
-                    ? new[] { $"\"{apiMethod.MethodRoute}\"" }
-                    : null;
-
-                method.Attributes.Add(new CodeGenAttribute(methodAttributeType, methodAttributeRoute));
-
-                controllerClass.Methods.Add(method);
+                controllerClass.Methods.Add(GenerateMethod(apiMethod));
             }
 
-            AddController(context, controllerClass);
+            var constructor = new CodeGenConstructor(
+                controllerClass.Name,
+                Scope.Public,
+                null,
+                constructorParam,
+                string.Join(Environment.NewLine, constructorStatements));
+
+            constructor.Comment = new CodeGenComment(
+                "Constructor for this controller.",
+                paramComments: constructorParamComments);
+
+            controllerClass.Constructors.Add(constructor);
+
+            return controllerClass;
         }
 
-        private void GenerateModels(GeneratorExecutionContext context, ApiDefinition definition)
+        private CodeGenMethod GenerateMethod(ApiMethod apiMethod)
         {
-            foreach (KeyValuePair<string, ApiModel> model in definition.Models)
+            if (apiMethod is null) throw new ArgumentNullException(nameof(apiMethod));
+
+            var methodParams = new List<string>();
+            var methodParamComments = new Dictionary<string, string>();
+
+            foreach (ApiType qp in apiMethod.QueryParams)
             {
+                methodParams.Add($"[FromQuery] {ResolveModelType(qp.Type)} {qp.Name}");
+
+                if (!string.IsNullOrWhiteSpace(qp.Description))
+                {
+                    methodParamComments.Add(qp.Name, qp.Description);
+                }
+            }
+
+            if (apiMethod.RequestBodyType != null)
+            {
+                methodParams.Add($"[FromBody] {ResolveModelType(apiMethod.RequestBodyType.Type)} requestBody");
+                methodParamComments.Add("requestBody", "The body of the request.");
+
+            }
+
+            string returnComment = apiMethod.ResponseBodyType != null
+                ? @$"Response containing the content of type <see cref=""{ResolveModelType(apiMethod.ResponseBodyType.Type)}""/>"
+                : null;
+
+            var method = new CodeGenMethod(
+                apiMethod.Name,
+                apiMethod.Async
+                    ? "Task<IActionResult>"
+                    : "IActionResult",
+                Scope.Public,
+                MethodType.Normal,
+                null,
+                methodParams,
+                GenerateMethodBody(apiMethod));
+
+            method.Comment = new CodeGenComment(
+                apiMethod.Description,
+                paramComments: methodParamComments,
+                returnComment: returnComment);
+
+            var methodAttributeType = apiMethod.Method switch
+            {
+                "get" => "HttpGet",
+                "post" => "HttpPost",
+                "put" => "HttpPut",
+                "patch" => "HttpPatch",
+                "delete" => "HttpDelete",
+                _ => throw new Exception("Oh no!")
+            };
+
+            var methodAttributeRoute = !string.IsNullOrWhiteSpace(apiMethod.MethodRoute)
+                ? new[] { $"\"{apiMethod.MethodRoute}\"" }
+                : null;
+
+            method.Attributes.Add(new CodeGenAttribute(methodAttributeType, methodAttributeRoute));
+
+            return method;
+        }
+
+        private string GenerateMethodBody(ApiMethod apiMethod)
+        {
+            string validatorType = $"{apiMethod.Name}Validator";
+            string handlerType = $"{apiMethod.Name}Handler";
+
+            var builder = new StringBuilder();
+            List<string> methodParams = apiMethod.QueryParams.Select(qp => qp.Name).ToList();
+
+            if (apiMethod.RequestBodyType != null) methodParams.Add("requestBody");
+
+            string methodParamStr = string.Join(", ", methodParams);
+
+            builder.AppendLine($@"{handlerType} handler = _ServiceProvider.GetService<{handlerType}>();
+if (handler == null) return new StatusCodeResult(500);");
+
+            builder.AppendLine();
+
+            if (methodParams.Any())
+            {
+                builder.AppendLine($@"{validatorType} validator = _ServiceProvider.GetService<{validatorType}>();
+if (validator == null) return new StatusCodeResult(500); 
+
+try
+{{
+    ValidationResult validationResult = validator.Validate({methodParamStr})
+
+    if (!validationResult.Success)
+    {{
+        return handler.HandleValidationFailure(validationResults);
+    }}
+}}
+catch (Exception e)
+{{
+    return handler.HandleValidationError(e);
+}}");
+
+                builder.AppendLine();
+            }
+
+            string handleCall = $"handler.HandleRequest({methodParamStr});";
+
+            if (apiMethod.ResponseBodyType != null)
+            {
+                builder.AppendLine($"{ResolveModelType(apiMethod.ResponseBodyType.Type)} responseBody = {handleCall}");
+                builder.AppendLine($"return Ok(responseBody);");
+            }
+            else
+            {
+                builder.AppendLine(handleCall);
+                builder.AppendLine($"return NoContent();");
+            }
+
+            
+            return builder.ToString();
+        }
+
+        private IEnumerable<CodeGenClass> GenerateModels(ApiDefinition definition)
+        {
+            foreach (ApiModel model in definition.Models)
+            {
+                if (string.IsNullOrWhiteSpace(model.Name)) throw new ArgumentException("Invalid model name");
+
                 var modelClass = new CodeGenClass(
-                    model.Key,
+                    model.Name,
                     Scope.Public,
                     ClassType.Normal);
 
-                foreach (ApiType prop in model.Value.Props)
+                modelClass.Comment = new CodeGenComment(model.Description);
+
+                foreach (ApiType prop in model.Props)
                 {
+                    if (string.IsNullOrWhiteSpace(prop.Name)) throw new ArgumentException("Invalid property name");
+                    if (string.IsNullOrWhiteSpace(prop.Type)) throw new ArgumentException("Invalid property type");
+
                     var propProp = new CodeGenProperty(
                         LowerToUpperCamel(prop.Name),
-                        ResolveModelType(prop.Type, false), 
+                        ResolveModelType(prop.Type), 
                         Scope.Public, 
                         true);
+
+                    propProp.Comment = new CodeGenComment(prop.Description);
                     
                     // TODO required
 
                     modelClass.Properties.Add(propProp);
                 }
 
-                AddModel(context, modelClass);
+                yield return modelClass;
             }
-        }
-
-        private void AddController(GeneratorExecutionContext context, CodeGenClass controllerClass)
-        {
-            var generatedNamespace = new CodeGenNamespace("GeneratedControllers");
-            generatedNamespace.Content.Add(controllerClass);
-
-            string generatedCodeString = generatedNamespace.GenerateCode();
-
-            var sourceText = SourceText.From(generatedCodeString, Encoding.UTF8);
-            context.AddSource($"{controllerClass.Name}.cs", sourceText);
-        }
-
-        private void AddModel(GeneratorExecutionContext context, CodeGenClass modelClass)
-        {
-            var generatedNamespace = new CodeGenNamespace("GeneratedModels");
-            generatedNamespace.Content.Add(modelClass);
-
-            string generatedCodeString = generatedNamespace.GenerateCode();
-
-            var sourceText = SourceText.From(generatedCodeString, Encoding.UTF8);
-            context.AddSource($"{modelClass.Name}.cs", sourceText);
         }
 
         private string LowerToUpperCamel(string lower) => $"{lower.ToUpper()[0]}{lower.Substring(1)}";
 
-        private string ResolveModelType(string type, bool includeNamespace)
+        private string ResolveModelType(string type)
         {
             if (!type.StartsWith("#/")) return type;
 
-            string baseType = type.Substring(type.LastIndexOf('/') + 1);
-            return includeNamespace ?  $"GeneratedModels.{baseType}" : baseType;
+            return type.Substring(type.LastIndexOf('/') + 1);
         }
     }
 }

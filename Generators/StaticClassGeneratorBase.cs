@@ -24,8 +24,9 @@ namespace Generators
             var generatedClass = new CodeGenClass(
                 _ClassName, 
                 Scope.Public, 
-                ClassType.Static, 
-                comment: $@"Class: {_ClassName}
+                ClassType.Static);
+
+            generatedClass.Comment = new CodeGenComment($@"Class: {_ClassName}
 Description: {_ClassDescription}
 Auto-generated on {DateTime.Now}");
 

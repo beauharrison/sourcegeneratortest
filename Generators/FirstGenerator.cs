@@ -10,7 +10,7 @@ namespace Generators
     {
         public void Execute(GeneratorExecutionContext context)
         {
-            var @class = new CodeGenClass("GeneratedClass", Scope.Public, ClassType.Normal, comment: "this is auto generated!");
+            var @class = new CodeGenClass("GeneratedClass", Scope.Public, ClassType.Normal);
 
             @class.Methods.Add(new CodeGenMethod("GeneratedMethod", null, Scope.Public, MethodType.Static, null, null, @"System.Console.WriteLine(""Hello World 123"");"));
 

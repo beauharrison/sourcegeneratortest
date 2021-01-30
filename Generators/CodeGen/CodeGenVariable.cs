@@ -7,16 +7,21 @@ namespace CodeGen
     public class CodeGenVariable : ICodeGenElement
     {
         public CodeGenVariable(
-            string name, 
-            string type, 
-            Scope scope, 
-            VariableType variableType = VariableType.Normal, 
+            string name,
+            string type,
+            Scope scope,
+            VariableType variableType = VariableType.Normal,
+            bool readOnly = false,
             string assignment = null)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Type = type ?? throw new ArgumentNullException(nameof(type));
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
+            if (string.IsNullOrWhiteSpace(type)) throw new ArgumentException(nameof(type));
+
+            Name = name;
+            Type = type;
             Scope = scope;
             VariableType = variableType;
+            ReadOnly = readOnly;
             Assignment = assignment;
         }
 
@@ -28,16 +33,31 @@ namespace CodeGen
 
         public VariableType VariableType { get; }
 
+        public bool ReadOnly { get; }
+
         public string Assignment { get; }
+
+        public CodeGenComment Comment { get; }
 
         public string GenerateCode(CodeGenStyle style = null)
         {
             if (style == null) style = new CodeGenStyle();
 
-            var builder = new StringBuilder(style.Indent);
+            var builder = new StringBuilder();
 
+            if (Comment != null)
+            {
+                builder.AppendLine(Comment.GenerateCode(style));
+            }
+
+            builder.Append(style.Indent);
             builder.Append(Scope.ToString().ToLower());
             builder.Append(" ");
+
+            if (ReadOnly)
+            {
+                builder.Append("readonly ");
+            }
 
             if (VariableType != VariableType.Normal)
             {

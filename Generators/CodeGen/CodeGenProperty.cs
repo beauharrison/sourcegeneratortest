@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 
 namespace CodeGen
@@ -8,8 +7,11 @@ namespace CodeGen
     {
         public CodeGenProperty(string name, string type, Scope scope, string getMethodBody, string setMethodBody = null)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Type = type ?? throw new ArgumentNullException(nameof(type));
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
+            if (string.IsNullOrWhiteSpace(type)) throw new ArgumentException(nameof(type));
+
+            Name = name;
+            Type = type;
             Scope = scope;
             HasSet = !string.IsNullOrWhiteSpace(setMethodBody);
             GetMethodBody = getMethodBody ?? throw new ArgumentNullException(nameof(getMethodBody));
@@ -18,8 +20,11 @@ namespace CodeGen
 
         public CodeGenProperty(string name, string type, Scope scope, bool hasSet, string initializer = null)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Type = type ?? throw new ArgumentNullException(nameof(type));
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
+            if (string.IsNullOrWhiteSpace(type)) throw new ArgumentException(nameof(type));
+
+            Name = name;
+            Type = type;
             Scope = scope;
             HasSet = hasSet;
             Initializer = initializer;
@@ -39,16 +44,25 @@ namespace CodeGen
 
         public string Initializer { get; }
 
+        public CodeGenComment Comment { get; set; }
+
         public string GenerateCode(CodeGenStyle style = null)
         {
             if (style == null) style = new CodeGenStyle();
 
-            var builder = new StringBuilder(style.Indent);
+            var builder = new StringBuilder();
 
+            if (Comment != null)
+            {
+                builder.AppendLine(Comment.GenerateCode(style));
+            }
+
+            builder.Append(style.Indent);
             builder.Append(Scope.ToString().ToLower());
             builder.Append(" ");
 
-            builder.AppendLine($"{Type} {Name} {{");
+            builder.AppendLine($"{Type} {Name}");
+            builder.AppendLine($"{style.Indent}{{");
             style.IndentCount++;
 
             if (!string.IsNullOrWhiteSpace(GetMethodBody))

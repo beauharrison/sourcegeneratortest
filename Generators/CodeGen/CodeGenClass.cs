@@ -7,13 +7,12 @@ namespace CodeGen
 {
     public class CodeGenClass : ICodeGenElement
     {
-        public CodeGenClass(string name, Scope scope, ClassType classType, string[] derivedFrom = null, string comment = null)
+        public CodeGenClass(string name, Scope scope, ClassType classType, string[] derivedFrom = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Scope = scope;
             ClassType = classType;
             DerivedFrom = derivedFrom ?? new string[0];
-            Comment = comment;
         }
 
         public string Name { get; }
@@ -24,7 +23,7 @@ namespace CodeGen
 
         public string[] DerivedFrom { get; }
 
-        public string Comment { get; }
+        public CodeGenComment Comment { get; set; }
 
         public List<CodeGenVariable> Variables { get; } = new List<CodeGenVariable>();
 
@@ -42,9 +41,9 @@ namespace CodeGen
 
             var builder = new StringBuilder();
 
-            if (!string.IsNullOrWhiteSpace(Comment))
+            if (Comment != null)
             {
-                builder.AppendLine(style.FormatComment(Comment));
+                builder.AppendLine(Comment.GenerateCode(style));
             }
 
             foreach (var attribute in Attributes)

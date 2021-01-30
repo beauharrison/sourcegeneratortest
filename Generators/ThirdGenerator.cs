@@ -28,16 +28,17 @@ namespace Generators
             //            }
             //#endif
 
-            context.RegisterForSyntaxNotifications(() => new MySyntaxReceiver(NamespaceName, ClassName, MethodName));
+            context.RegisterForSyntaxNotifications(() => new StaticMethodCallSyntaxReceiver(NamespaceName, ClassName, MethodName));
         }
 
         protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenClass @class)
         {
-            MySyntaxReceiver syntaxReceiver = (MySyntaxReceiver) context.SyntaxReceiver;
+            StaticMethodCallSyntaxReceiver syntaxReceiver = (StaticMethodCallSyntaxReceiver) context.SyntaxReceiver;
 
             var foundTypes = new HashSet<string>();
 
-            if (!syntaxReceiver.ArgumentsToGenerateFor.Any())
+            // No calls? Generate stub for intellisence.
+            if (!syntaxReceiver.Calls.Any())
             {
                 @class.Methods.Add(new CodeGenMethod(
                     MethodName,
@@ -52,8 +53,11 @@ return arg;"));
                 return;
             }
 
-            foreach (ExpressionSyntax argExpression in syntaxReceiver.ArgumentsToGenerateFor)
+            foreach ((InvocationExpressionSyntax Invocation, ExpressionSyntax[] Args) call in syntaxReceiver.Calls)
             {
+                if (call.Args.Length != 1) continue;
+
+                var argExpression = call.Args[0];
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(argExpression.SyntaxTree);
                 string argumentType = semanticModel.GetTypeInfo(argExpression).Type.ToString();
 
@@ -70,48 +74,6 @@ return arg;"));
                     null,
                     new[] { $"{argumentType} arg" },
                     "return arg;"));
-            }
-        }
-    }
-
-    internal class MySyntaxReceiver : ISyntaxReceiver
-    {
-        private readonly string _Namespace;
-        private readonly string _Class;
-        private readonly string _Method;
-
-        public MySyntaxReceiver(string @namespace, string @class, string method)
-        {
-            _Namespace = @namespace;
-            _Class = @class;
-            _Method = method;
-        }
-
-        public List<ExpressionSyntax> ArgumentsToGenerateFor = new List<ExpressionSyntax>();
-
-        public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-        {
-            if (syntaxNode is InvocationExpressionSyntax invocation &&
-                invocation.Expression is MemberAccessExpressionSyntax methodMemberAccess)
-            {
-                ArgumentSyntax[] arguments = invocation.ArgumentList.Arguments.ToArray();
-                SyntaxNode[] children = methodMemberAccess.ChildNodes().ToArray();
-
-                if (children.Length == 2 &&
-                    arguments.Length == 1 &&
-                    children[0] is MemberAccessExpressionSyntax classMemberAccess &&
-                    children[1] is IdentifierNameSyntax methodIdentifier &&
-                    classMemberAccess.Expression is IdentifierNameSyntax @namespace)
-                {
-                    string methodName = methodIdentifier.Identifier.ValueText;
-                    string className = classMemberAccess.Name.Identifier.ValueText;
-                    string namespaceName = @namespace.Identifier.ValueText;
-
-                    if (string.Equals(namespaceName, _Namespace) && string.Equals(className, _Class) && string.Equals(methodName, _Method))
-                    {
-                        ArgumentsToGenerateFor.Add(arguments[0].Expression);
-                    }
-                }
             }
         }
     }

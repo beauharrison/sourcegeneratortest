@@ -4,15 +4,17 @@ namespace Generators.ApiDefModel
 {
     public class ApiDefinition
     {
-        public string Name { get; set; }
+        public string Name { get; set; } 
+
+        public string Namespace { get; set; }
 
         public string ControllerRoute { get; set; }
 
-        public ApiType[] Dependencies { get; set; }
+        public ApiMethod[] Methods { get; set; } = new ApiMethod[0];
 
-        public ApiMethod[] Methods { get; set; }
+        public List<ApiModel> Models { get; set; } = new List<ApiModel>();
 
-        public Dictionary<string, ApiModel> Models { get; set; }
+        public string Description { get; set; }
     }
 
     public class ApiType
@@ -22,6 +24,8 @@ namespace Generators.ApiDefModel
         public string Name { get; set; }
 
         public bool Required { get; set; }
+
+        public string Description { get; set; }
     }
 
     public class ApiMethod
@@ -34,15 +38,21 @@ namespace Generators.ApiDefModel
 
         public bool Async { get; set; }
 
-        public ApiType[] QueryParams { get; set; }
+        public ApiType[] QueryParams { get; set; } = new ApiType[0];
 
         public ApiType RequestBodyType { get; set; }
 
         public ApiType ResponseBodyType { get; set; }
+
+        public string Description { get; set; }
     }
 
     public class ApiModel
     {
-        public ApiType[] Props { get; set; }
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public ApiType[] Props { get; set; } = new ApiType[0];
     }
 }

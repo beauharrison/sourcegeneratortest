@@ -1,22 +1,25 @@
 ﻿{
   "name": "AutoGen",
+  "namespace": "GeneratedApi",
+  "definition": "An automatically generated API controller.",
   "controllerRoute": "[controller]",
-  "dependencies": [
-    {
-      "type": "GeneratedApi.TestService",
-      "name": "_TestService"
-    }
-  ],
   "methods": [
     {
       "name": "GetUser",
+      "description": "Gets a user from somewhere",
       "method": "get",
-      "methodRoute": null,
-      "async": false,
+      "methodRoute": "/api/poopy/new",
+      "async": true,
       "queryParams": [
         {
           "type": "int",
-          "name": "times"
+          "name": "times",
+          "description": "Number of times"
+        },
+        {
+          "type": "long",
+          "name": "doubleTimes",
+          "description": "More number of times than ever before"
         }
       ],
       "responseBodyType": {
@@ -25,6 +28,7 @@
     },
     {
       "name": "AddUser",
+      "description": "Adds a user. Where does it go? Who knows.",
       "method": "post",
       "methodRoute": "user/add",
       "async": false,
@@ -32,51 +36,76 @@
       "requestBodyType": {
         "type": "#/model/AddUserRequestBody"
       }
+    },
+    {
+      "name": "StopCrime",
+      "description": "JUSTICE!",
+      "method": "post",
+      "queryParams": [
+        {
+          "type": "DateTime",
+          "name": "when",
+          "description": "Now!"
+        }
+      ]
     }
   ],
-  "models": {
-    "GetUserResponseBody": {
+  "models": [
+    {
+      "name": "GetUserResponseBody",
+      "description": "A",
+      "props": [
+        {
+          "type": "#/model/UserModel",
+          "name": "user",
+          "description": "The user to add",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "AddUserRequestBody",
+      "description": "Details of a user to add.",
       "props": [
         {
           "type": "string",
           "name": "name",
+          "description": "The name of the user",
           "required": true
         },
         {
           "type": "int",
           "name": "age",
+          "description": "The age of the user",
           "required": false
         }
-      ]
+      ],
     },
-    "AddUserRequestBody": {
-      "props": [
-        {
-          "type": "#/model/UserModel",
-          "name": "name",
-          "required": true
-        }
-      ]
-    },
-    "UserModel": {
+    {
+      "name": "UserModel",
+      "description": "Details of a user.",
       "props": [
         {
           "type": "System.Guid",
-          "name": "id"
+          "name": "id",
+          "description": "Id of the user"
         },
         {
           "type": "string",
-          "name": "name"
+          "name": "name",
+          "description": "The name of the user"
         },
         {
           "type": "int",
-          "name": "age"
+          "name": "age",
+          "description": "The age of the user"
         },
         {
           "type": "int",
-          "name": "count"
+          "name": "count",
+          "description": "Number of atoms in the users butt"
         }
       ]
     }
-  }
+  ]
 }

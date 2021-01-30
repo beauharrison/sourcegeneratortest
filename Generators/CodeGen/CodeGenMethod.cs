@@ -4,17 +4,26 @@ using System.Linq;
 using System.Text;
 
 namespace CodeGen
-{ 
+{
     public class CodeGenMethod : ICodeGenElement
     {
-        public CodeGenMethod(string name, string returnType, Scope scope, MethodType methodType, string[] genericTypes, string[] arguments, string body)
+        public CodeGenMethod(
+            string name, 
+            string returnType, 
+            Scope scope, 
+            MethodType methodType, 
+            IEnumerable<string> genericTypes,
+            IEnumerable<string> parameters, 
+            string body)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            ReturnType = returnType ?? "void";
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
+
+            Name = name;
+            ReturnType = !string.IsNullOrWhiteSpace(returnType) ? returnType : "void";
             Scope = scope;
             MethodType = methodType;
             GenericTypes = genericTypes ?? new string[0];
-            Arguments = arguments ?? new string[0];
+            Parameters = parameters ?? new string[0];
             Body = body ?? string.Empty;
         }
 
@@ -26,11 +35,15 @@ namespace CodeGen
 
         public MethodType MethodType { get; }
 
-        public string[] GenericTypes { get; }
+        public IEnumerable<string> GenericTypes { get; }
 
-        public string[] Arguments { get; }
+        public IEnumerable<string> Parameters { get; }
 
         public string Body { get; }
+
+        public CodeGenComment Comment { get; set; }
+
+        public string ReturnComment { get; }
 
         public List<CodeGenAttribute> Attributes { get; } = new List<CodeGenAttribute>();
 
@@ -39,6 +52,11 @@ namespace CodeGen
             if (style == null) style = new CodeGenStyle();
 
             var builder = new StringBuilder();
+
+            if (Comment != null)
+            {
+                builder.AppendLine(Comment.GenerateCode(style));
+            }
 
             foreach (var attribute in Attributes)
             {
@@ -57,7 +75,7 @@ namespace CodeGen
 
             var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes)}>" : string.Empty;
 
-            var argList = string.Join(", ", Arguments);
+            var argList = string.Join(", ", Parameters);
 
             builder.AppendLine($"{ReturnType} {Name}{genericList}({argList})");
             builder.AppendLine($"{style.Indent}{{");

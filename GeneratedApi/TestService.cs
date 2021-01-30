@@ -1,5 +1,5 @@
 using System;
-using GeneratedModels;
+using GeneratedApi.Models;
 
 namespace GeneratedApi
 {

@@ -18,12 +18,27 @@ namespace CodeGen
             return $"{Indent}{replaced}";
         }
 
-        public string FormatComment(string comment)
+        public string FormatCommentSummary(string comment)
         {
             string pre = $"{Indent}/// ";
 
             var replaced = comment.Trim().Replace(Environment.NewLine, $"{Environment.NewLine}{pre}");
             return $"{pre}<summary>{Environment.NewLine}{pre}{replaced}{Environment.NewLine}{pre}</summary>";
+        }
+
+        public string FormatCommentTypeParamRef(string name, string comment)
+        {
+            return @$"{Indent}/// <typeparam name=""{name}"">{comment}</typeparam>";
+        }
+
+        public string FormatCommentParamRef(string name, string comment)
+        {
+            return @$"{Indent}/// <param name=""{name}"">{comment}</param>";
+        }
+
+        public string FormatCommentReturn(string comment)
+        {
+            return @$"{Indent}/// <returns>{comment}</returns>";
         }
     }
 }

@@ -13,7 +13,8 @@ namespace GeneratedApi
     {
         public static void Main(string[] args)
         {
-            GeneratedModels.UserModel b;
+            Controllers.AutoGenController a; 
+            Models.UserModel m;
             CreateHostBuilder(args).Build().Run();
         }
 

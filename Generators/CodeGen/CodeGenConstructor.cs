@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -7,12 +8,19 @@ namespace CodeGen
 
     public class CodeGenConstructor : ICodeGenElement
     {
-        public CodeGenConstructor(string className, Scope scope, string[] genericTypes, string[] arguments, string body)
+        public CodeGenConstructor(
+            string className, 
+            Scope scope, 
+            IEnumerable<string> genericTypes,
+            IEnumerable<string> parameters, 
+            string body)
         {
+            if (string.IsNullOrWhiteSpace(className)) throw new ArgumentException(nameof(className));
+
             ClassName = className;
             Scope = scope;
-            GenericTypes = genericTypes ?? new string[0];
-            Arguments = arguments ?? new string[0];
+            GenericTypes = genericTypes ?? Enumerable.Empty<string>();
+            Parameters = parameters ?? Enumerable.Empty<string>();
             Body = body ?? string.Empty;
         }
 
@@ -20,11 +28,13 @@ namespace CodeGen
 
         public Scope Scope { get; }
 
-        public string[] GenericTypes { get; }
+        public IEnumerable<string> GenericTypes { get; }
 
-        public string[] Arguments { get; }
+        public IEnumerable<string> Parameters { get; }
 
         public string Body { get; }
+
+        public CodeGenComment Comment { get; set; }
 
         public List<CodeGenAttribute> Attributes { get; } = new List<CodeGenAttribute>();
 
@@ -33,6 +43,11 @@ namespace CodeGen
             if (style == null) style = new CodeGenStyle();
 
             var builder = new StringBuilder();
+
+            if (Comment != null)
+            {
+                builder.AppendLine(Comment.GenerateCode(style));
+            }
 
             foreach (var attribute in Attributes)
             {
@@ -45,7 +60,7 @@ namespace CodeGen
 
             var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes)}>" : string.Empty;
 
-            var argList = string.Join(", ", Arguments);
+            var argList = string.Join(", ", Parameters);
 
             builder.AppendLine($"{ClassName}{genericList}({argList})");
             builder.AppendLine($"{style.Indent}{{");
