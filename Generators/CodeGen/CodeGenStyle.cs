@@ -12,10 +12,10 @@ namespace CodeGen
 
         public string Indent => new string(IndentChar, IndentSize * IndentCount);
 
-        public string IndentMultilineString(string original)
+        public string IndentMultilineString(string original, bool prependIndent = true)
         {
             var replaced = original.Trim().Replace(Environment.NewLine, $"{Environment.NewLine}{Indent}");
-            return $"{Indent}{replaced}";
+            return prependIndent ? $"{Indent}{replaced}" : replaced;
         }
 
         public string FormatCommentSummary(string comment)

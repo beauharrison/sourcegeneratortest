@@ -1,16 +1,14 @@
 ﻿using CodeGen;
-using Generators.ApiDefModel;
+using Generators.Learning;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Generators
+namespace Generators.Api
 {
     [Generator]
     public class ApiControllerGenerator : ISourceGenerator
@@ -88,7 +86,7 @@ namespace Generators
             var constructorStatements = new List<string>();
             var constructorParam = new List<string>();
             var constructorParamComments = new Dictionary<string, string>();
-                       
+
             constructorParam.Add("IServiceProvider serviceProvider");
             constructorParamComments.Add("serviceProvider", "The service provider to access validators and handlers.");
             constructorStatements.Add($"_ServiceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider))");
@@ -257,7 +255,7 @@ catch (Exception e)
                 builder.AppendLine($"return NoContent();");
             }
 
-            
+
             return builder.ToString();
         }
 
@@ -281,12 +279,12 @@ catch (Exception e)
 
                     var propProp = new CodeGenProperty(
                         LowerToUpperCamel(prop.Name),
-                        ResolveModelType(prop.Type), 
-                        Scope.Public, 
+                        ResolveModelType(prop.Type),
+                        Scope.Public,
                         true);
 
                     propProp.Comment = new CodeGenComment(prop.Description);
-                    
+
                     // TODO required
 
                     modelClass.Properties.Add(propProp);

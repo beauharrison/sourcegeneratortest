@@ -3,9 +3,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
-namespace Generators
+namespace Generators.Learning
 {
 
     [Generator]
@@ -22,13 +23,13 @@ namespace Generators
         public override void Initialize(GeneratorInitializationContext context)
         {
             //#if DEBUG
-            //            if (!Debugger.IsAttached)
-            //            {
-            //                Debugger.Launch();
-            //            }
+            //if (!debugger.isattached)
+            //{
+            //    debugger.launch();
+            //}
             //#endif
 
-            context.RegisterForSyntaxNotifications(() => new StaticMethodCallSyntaxReceiver(NamespaceName, ClassName, MethodName));
+            context.RegisterForSyntaxNotifications(() => new StaticMethodCallSyntaxReceiver(NamespaceName, ClassName, MethodName, 1, 1, 0, 0));
         }
 
         protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenClass @class)
@@ -53,11 +54,11 @@ return arg;"));
                 return;
             }
 
-            foreach ((InvocationExpressionSyntax Invocation, ExpressionSyntax[] Args) call in syntaxReceiver.Calls)
+            foreach (StaticMethodCall call in syntaxReceiver.Calls)
             {
-                if (call.Args.Length != 1) continue;
+                if (call.Arguments.Length != 1) continue;
 
-                var argExpression = call.Args[0];
+                var argExpression = call.Arguments[0];
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(argExpression.SyntaxTree);
                 string argumentType = semanticModel.GetTypeInfo(argExpression).Type.ToString();
 

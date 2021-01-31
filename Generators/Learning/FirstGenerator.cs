@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
 
-namespace Generators
+namespace Generators.Learning
 {
     [Generator]
     public class FirstGenerator : ISourceGenerator
@@ -19,18 +19,18 @@ namespace Generators
 
             string codeString = @namespace.GenerateCode();
 
-//            string codeString = @"
-//namespace GeneratedNamespace
-//{
-//    public class GeneratedClass
-//    {
-//        public static void GeneratedMethod()
-//        {
-//            System.Console.WriteLine(""Hello World once more"");
-//        }
-//    }
-//}
-//";
+            //            string codeString = @"
+            //namespace GeneratedNamespace
+            //{
+            //    public class GeneratedClass
+            //    {
+            //        public static void GeneratedMethod()
+            //        {
+            //            System.Console.WriteLine(""Hello World once more"");
+            //        }
+            //    }
+            //}
+            //";
 
             context.AddSource("myGeneratedFile.cs", SourceText.From(codeString, Encoding.UTF8));
         }

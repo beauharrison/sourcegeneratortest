@@ -69,7 +69,7 @@ namespace CodeGen
 
             if (!string.IsNullOrWhiteSpace(Assignment))
             {
-                builder.Append($" = {Assignment};");
+                builder.Append($" = {style.IndentMultilineString(Assignment, false)};");
             } 
             else
             {

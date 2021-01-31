@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Generators.ApiDefModel
+namespace Generators.Api
 {
     public class ApiDefinition
     {

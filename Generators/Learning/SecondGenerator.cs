@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
-namespace Generators
+namespace Generators.Learning
 {
     [Generator]
     public class SecondGenerator : ISourceGenerator

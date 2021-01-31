@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
 
-namespace Generators
+namespace Generators.Learning
 {
     public static class GeneratorExtensions
     {

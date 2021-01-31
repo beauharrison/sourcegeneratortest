@@ -8,7 +8,7 @@
 //using System.Linq;
 //using System.Text;
 
-//namespace Generators
+//namespace Generators.Sql
 //{
 //    [Generator]
 //    public class SqlQueryGenerator : StaticClassGeneratorBase
