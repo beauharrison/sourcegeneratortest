@@ -1,19 +1,43 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Generators.STEvent;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Generators
 {
-    internal class StaticMethodCall
+    internal class ClassWithAttributeSyntaxReciever : ISyntaxReceiver
     {
-        public InvocationExpressionSyntax Invocation { get; set; }
+        private HashSet<string> _AttributeNames;
 
-        public string Method { get; set; }
+        public ClassWithAttributeSyntaxReciever(params Type[] attributeTypes)
+        {
+            _AttributeNames = new HashSet<string>(attributeTypes.Select(GetAttributeName));
+        }
 
-        public ExpressionSyntax[] Arguments { get; set; }
+        public List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] attributes)> Classes = 
+            new List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] attributes)>();
+        
+        public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+        {
+            if (syntaxNode is ClassDeclarationSyntax { AttributeLists: { Count: >= 1 } } classDeclaration)
+            {
+                AttributeSyntax[] attributeSyntaxes = classDeclaration.AttributeLists
+                    .SelectMany(attrList => attrList.Attributes)
+                    .Where(attr => attr.Name is IdentifierNameSyntax identfierName && _AttributeNames.Contains(identfierName.Identifier.Text))
+                    .ToArray();
 
-        public TypeSyntax[] GenericTypes { get; set; }
+                if (attributeSyntaxes.Any())
+                {
+                    Classes.Add((classDeclaration, attributeSyntaxes));
+                }
+            }
+        }
+
+        private string GetAttributeName(Type type) => type.Name.Length > 9 && type.Name.EndsWith("Attribute")
+            ? type.Name.Substring(0, type.Name.Length - 9)
+            : type.Name;
     }
 
     internal class StaticMethodCallSyntaxReceiver : ISyntaxReceiver

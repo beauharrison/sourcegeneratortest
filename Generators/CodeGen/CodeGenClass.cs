@@ -7,11 +7,17 @@ namespace CodeGen
 {
     public class CodeGenClass : ICodeGenElement
     {
-        public CodeGenClass(string name, Scope scope, ClassType classType, string[] derivedFrom = null)
+        public CodeGenClass(
+            string name, 
+            Scope scope, 
+            ClassType classType,
+            IEnumerable<CodeGenGeneric> genericTypes = null,
+            string[] derivedFrom = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Scope = scope;
             ClassType = classType;
+            GenericTypes = genericTypes ?? new CodeGenGeneric[0];
             DerivedFrom = derivedFrom ?? new string[0];
         }
 
@@ -20,6 +26,8 @@ namespace CodeGen
         public Scope Scope { get; }
 
         public ClassType ClassType { get; }
+
+        public IEnumerable<CodeGenGeneric> GenericTypes { get; }
 
         public string[] DerivedFrom { get; }
 
@@ -61,7 +69,9 @@ namespace CodeGen
                 builder.Append(" ");
             }
 
-            builder.Append($"class {Name}");
+            var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;
+
+            builder.Append($"class {Name}{genericList}");
 
             if (DerivedFrom.Any())
             {
@@ -70,6 +80,14 @@ namespace CodeGen
             }
 
             builder.AppendLine();
+
+            foreach (var constrainedGeneric in GenericTypes.Where(gt => gt.Constraint != null))
+            {
+                style.IndentCount++;
+                builder.AppendLine($"{style.Indent}where {constrainedGeneric.Name} : {constrainedGeneric.Constraint}");
+                style.IndentCount--;
+            }
+
             builder.AppendLine($"{style.Indent}{{");
 
             style.IndentCount++;

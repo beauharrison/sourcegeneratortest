@@ -30,12 +30,10 @@ namespace Generators
 Description: {_ClassDescription}
 Auto-generated on {DateTime.Now}");
 
-            GenerateClassMethods(context, generatedClass);
-
             var generatedNamespace = new CodeGenNamespace(_Namespace);
-            generatedNamespace.Content.Add(generatedClass);
 
-            ModifyNamespace(context, generatedNamespace);
+            GenerateClassMethods(context, generatedNamespace, generatedClass);
+            generatedNamespace.Content.Add(generatedClass);
 
             var generatedCodeString = generatedNamespace.GenerateCode();
 
@@ -45,10 +43,6 @@ Auto-generated on {DateTime.Now}");
 
         public abstract void Initialize(GeneratorInitializationContext context);
 
-        protected abstract void GenerateClassMethods(GeneratorExecutionContext context, CodeGenClass @class);
-
-        protected virtual void ModifyNamespace(GeneratorExecutionContext context, CodeGenNamespace @namespace)
-        {
-        }
+        protected abstract void GenerateClassMethods(GeneratorExecutionContext context, CodeGenNamespace @namespace, CodeGenClass @class);
     }
 }

@@ -68,7 +68,7 @@ namespace Generators.Api
                     $"{definition.Name}Controller",
                     Scope.Public,
                     ClassType.Normal,
-                    new[] { "ControllerBase" });
+                    derivedFrom: new[] { "ControllerBase" });
 
             // class comment
             if (!string.IsNullOrWhiteSpace(definition.Description))
@@ -127,7 +127,6 @@ namespace Generators.Api
             var constructor = new CodeGenConstructor(
                 controllerClass.Name,
                 Scope.Public,
-                null,
                 constructorParam,
                 string.Join(Environment.NewLine, constructorStatements));
 

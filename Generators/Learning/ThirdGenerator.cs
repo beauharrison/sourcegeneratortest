@@ -32,7 +32,7 @@ namespace Generators.Learning
             context.RegisterForSyntaxNotifications(() => new StaticMethodCallSyntaxReceiver(NamespaceName, ClassName, MethodName, 1, 1, 0, 0));
         }
 
-        protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenClass @class)
+        protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenNamespace @namespace, CodeGenClass @class)
         {
             StaticMethodCallSyntaxReceiver syntaxReceiver = (StaticMethodCallSyntaxReceiver) context.SyntaxReceiver;
 

@@ -5,26 +5,22 @@ using System.Text;
 
 namespace CodeGen
 {
-    public class CodeGenMethod : ICodeGenElement
+    public class CodeGenDelegate : ICodeGenElement
     {
-        public CodeGenMethod(
-            string name, 
-            string returnType, 
-            Scope scope, 
-            MethodType methodType, 
+        public CodeGenDelegate(
+            string name,
+            string returnType,
+            Scope scope,
             IEnumerable<CodeGenGeneric> genericTypes,
-            IEnumerable<string> parameters, 
-            string body)
+            IEnumerable<string> parameters)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
 
             Name = name;
             ReturnType = !string.IsNullOrWhiteSpace(returnType) ? returnType : "void";
             Scope = scope;
-            MethodType = methodType;
             GenericTypes = genericTypes ?? new CodeGenGeneric[0];
             Parameters = parameters ?? new string[0];
-            Body = body ?? string.Empty;
         }
 
         public string Name { get; }
@@ -33,13 +29,9 @@ namespace CodeGen
 
         public Scope Scope { get; }
 
-        public MethodType MethodType { get; }
-
         public IEnumerable<CodeGenGeneric> GenericTypes { get; }
 
         public IEnumerable<string> Parameters { get; }
-
-        public string Body { get; }
 
         public CodeGenComment Comment { get; set; }
 
@@ -65,38 +57,13 @@ namespace CodeGen
 
             builder.Append(style.Indent);
             builder.Append(Scope.ToString().ToLower());
-            builder.Append(" ");
-
-            if (MethodType != MethodType.Normal)
-            {
-                builder.Append(MethodType.ToString().ToLower());
-                builder.Append(" ");
-            }
 
             var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;
-
             var argList = string.Join(", ", Parameters);
 
-            builder.AppendLine($"{ReturnType} {Name}{genericList}({argList})");
-            
-            foreach (var constrainedGeneric in GenericTypes.Where(gt => gt.Constraint != null))
-            {
-                style.IndentCount++;
-                builder.AppendLine($"{style.Indent}where {constrainedGeneric.Name} : {constrainedGeneric.Constraint}");
-                style.IndentCount--;
-            }
-
-            builder.AppendLine($"{style.Indent}{{");
-
-            style.IndentCount++;
-            builder.AppendLine(style.IndentMultilineString(Body));
-            style.IndentCount--;
-
-            builder.Append($"{style.Indent}}}");            
+            builder.Append($" delegate {ReturnType} {Name}{genericList}({argList});");
 
             return builder.ToString();
         }
-
-        public override string ToString() => GenerateCode();
     }
 }

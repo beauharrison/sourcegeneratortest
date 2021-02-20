@@ -11,7 +11,6 @@ namespace CodeGen
         public CodeGenConstructor(
             string className, 
             Scope scope, 
-            IEnumerable<string> genericTypes,
             IEnumerable<string> parameters, 
             string body)
         {
@@ -19,7 +18,6 @@ namespace CodeGen
 
             ClassName = className;
             Scope = scope;
-            GenericTypes = genericTypes ?? Enumerable.Empty<string>();
             Parameters = parameters ?? Enumerable.Empty<string>();
             Body = body ?? string.Empty;
         }
@@ -27,8 +25,6 @@ namespace CodeGen
         public string ClassName { get; }
 
         public Scope Scope { get; }
-
-        public IEnumerable<string> GenericTypes { get; }
 
         public IEnumerable<string> Parameters { get; }
 
@@ -58,11 +54,9 @@ namespace CodeGen
             builder.Append(Scope.ToString().ToLower());
             builder.Append(" ");
 
-            var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes)}>" : string.Empty;
-
             var argList = string.Join(", ", Parameters);
 
-            builder.AppendLine($"{ClassName}{genericList}({argList})");
+            builder.AppendLine($"{ClassName}({argList})");
             builder.AppendLine($"{style.Indent}{{");
 
             style.IndentCount++;

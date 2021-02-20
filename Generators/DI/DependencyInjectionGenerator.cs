@@ -34,7 +34,7 @@ namespace Generators.DI
                 maxGenericsCount: 2));
         }
 
-        protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenClass @class)
+        protected override void GenerateClassMethods(GeneratorExecutionContext context, CodeGenNamespace @namespace, CodeGenClass @class)
         {
             StaticMethodCallSyntaxReceiver syntaxReceiver = (StaticMethodCallSyntaxReceiver) context.SyntaxReceiver;
 
@@ -71,9 +71,11 @@ namespace Generators.DI
 
                 @class.Methods.Add(method);
             }
+
+            ModifyNamespace(@namespace);
         }
 
-        protected override void ModifyNamespace(GeneratorExecutionContext context, CodeGenNamespace @namespace)
+        private void ModifyNamespace(CodeGenNamespace @namespace)
         {
             @namespace.Usings.Add("System");
             @namespace.Usings.Add("System.Collections.Generic");
@@ -257,7 +259,7 @@ else
                 null,
                 Scope.Public,
                 MethodType.Static,
-                new[] { "TIdentifier", "TImplementation" },
+                new[] { new CodeGenGeneric("TIdentifier"), new CodeGenGeneric("TImplementation") },
                 null,
                 null);
 
@@ -276,7 +278,7 @@ else
                 null,
                 Scope.Public,
                 MethodType.Static,
-                new[] { "TIdentifier", "TImplementation" },
+                new[] { new CodeGenGeneric("TIdentifier"), new CodeGenGeneric("TImplementation") },
                 null,
                 null);
 
@@ -295,7 +297,7 @@ else
                 null,
                 Scope.Public,
                 MethodType.Static,
-                new[] { "TIdentifier", "TImplementation" },
+                new[] { new CodeGenGeneric("TIdentifier"), new CodeGenGeneric("TImplementation") },
                 null,
                 null);
 
@@ -317,7 +319,7 @@ else
                 "TIdentifier",
                 Scope.Public,
                 MethodType.Static,
-                new[] { "TIdentifier" },
+                new[] { new CodeGenGeneric("TIdentifier") },
                 null,
                 $@"if (_GetFunctions.TryGetValue(typeof(TIdentifier), out Func<object> getFunc))
 {{
