@@ -45,10 +45,9 @@ namespace DoIt
             //var c = DIService.Get<TestJunk>();
 
             STEvent.Register<MyImportantEvent>(MyHandler);
+            STEvent.Register<MyImportantEvent>(MyHandler2);
             STEvent.Notify(new MyImportantEvent { Name = "John" });
             STEvent.Notify(new MyImportantEvent { Name = "Timmy" });
-
-            //STEvent.Register<string, Program>((a, b) => { });
 
             var a = new MyGreatClassDecorator<string>(new MyGreatClass<string>("hello"));
             var b = new MyOtherGreatClassDecorator(new MyOtherGreatClass());
@@ -82,6 +81,11 @@ namespace DoIt
         private static void MyHandler(MyImportantEvent eventTohandle)
         {
             Console.WriteLine($"\"im a litte fat girl\" said {eventTohandle.Name}");
+        }
+
+        private static void MyHandler2(MyImportantEvent eventTohandle)
+        {
+            Console.WriteLine($"\"Do it again\" said {eventTohandle.Name}");
         }
     }
 
