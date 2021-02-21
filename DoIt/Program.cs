@@ -8,10 +8,15 @@ using System.Threading.Tasks;
 
 namespace DoIt
 {
+    public delegate void MyImportantEventHandler2(DoIt.MyImportantEvent arg0);
+
     class Program
     {
         static void Main(string[] args)
         {
+            Action<MyImportantEvent> act = (e) => { };
+            MyImportantEventHandler2 d = new MyImportantEventHandler2(act);
+
             //GeneratedNamespace.GeneratedClass.GeneratedMethod();
 
             //GeneratedNamespace.XmlPrinter.PrintFirst();
@@ -39,12 +44,14 @@ namespace DoIt
             //var b = DIService.Get<TestStuff>();
             //var c = DIService.Get<TestJunk>();
 
-            //STEvent.Register<string, long, int, Program>(MyHandler);
-            //STEvent.Notify("hello", 44, 3, new Program());
+            STEvent.Register<MyImportantEvent>(MyHandler);
+            STEvent.Notify(new MyImportantEvent { Name = "John" });
+            STEvent.Notify(new MyImportantEvent { Name = "Timmy" });
 
             //STEvent.Register<string, Program>((a, b) => { });
 
             var a = new MyGreatClassDecorator<string>(new MyGreatClass<string>("hello"));
+            var b = new MyOtherGreatClassDecorator(new MyOtherGreatClass());
 
             try
             {
@@ -70,18 +77,29 @@ namespace DoIt
             {
             }
 
-            var b = a.DoSomethingNew("", () => 4);
-
         }
 
-        private static void MyHandler(string arg1, long arg2, int arg3, Program arg4)
+        private static void MyHandler(MyImportantEvent eventTohandle)
         {
-            Console.WriteLine("im a litte fat girl");
+            Console.WriteLine($"\"im a litte fat girl\" said {eventTohandle.Name}");
         }
     }
 
+    public class MyImportantEvent
+    {
+        public string Name { get; set; }
+    }
+
+    public interface IMyGreatClass
+    {
+        TAbc DoSomething<TAbc>(int i, TAbc xyz) where TAbc : class, IAa;
+        Task<Aa> DoSomethingNew(string action, Func<int> something);
+        void GetIt();
+        int GetNumber();
+    }
+
     [Decorate]
-    public class MyGreatClass<T>
+    public class MyGreatClass<T> : IMyGreatClass
     {
         private T _A;
 
@@ -111,6 +129,42 @@ namespace DoIt
         }
     }
 
+
+    [Generators.STEvent.Decorate]
+    public class MyOtherGreatClass : IMyGreatClass
+    {
+        public Task<Aa> DoSomethingNew(string action, Func<int> something)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void GetIt()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetNumber()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// comments
+        /// </summary>
+        /// <typeparam name="TAbc"></typeparam>
+        /// <param name="i"></param>
+        /// <param name="xyz"></param>
+        /// <returns></returns>
+        public TAbc DoSomething<TAbc>(int i, TAbc xyz) where TAbc : class, IAa
+        {
+            throw new NotImplementedException();
+        }
+
+        public int EatPie(string a)
+        {
+            return 2;
+        }
+    }
     public class Aa : IAa
     {
 

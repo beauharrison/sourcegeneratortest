@@ -13,6 +13,10 @@ namespace Generators.STEvent
 {
     public class DecorateAttribute : Attribute
     {
+        public DecorateAttribute(Type deriveFrom = null)
+        {
+
+        }
     }
 
     [Generator]
@@ -29,10 +33,15 @@ namespace Generators.STEvent
         {
             ClassWithAttributeSyntaxReciever syntaxReceiver = (ClassWithAttributeSyntaxReciever) context.SyntaxReceiver;
 
-            foreach ((ClassDeclarationSyntax classDeclaration, AttributeSyntax[] attributes) in syntaxReceiver.Classes)
+            foreach ((ClassDeclarationSyntax classDeclaration, AttributeSyntax decorateAttribute) in syntaxReceiver.Classes)
             {
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(classDeclaration.SyntaxTree);
                 ISymbol classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+
+                TypeInfo attrType = semanticModel.GetTypeInfo(decorateAttribute.Name);
+                AttributeData decorateAttributeData = classSymbol.GetAttributes().First(attrData => attrData.AttributeClass.Equals(attrType.Type, SymbolEqualityComparer.Default));
+
+                INamedTypeSymbol decoratedTypeSymbol = decorateAttributeData.ConstructorArguments.FirstOrDefault().Value as INamedTypeSymbol;
 
                 Dictionary<string, string> constraints = classDeclaration.ConstraintClauses.ToDictionary(
                     constraintClause => constraintClause.Name.Identifier.Text,
@@ -41,12 +50,14 @@ namespace Generators.STEvent
                 IEnumerable<CodeGenGeneric> generics = classDeclaration.TypeParameterList?.Parameters.Select(parameter => GenerateMethodParameter(parameter, constraints));
 
                 string decoratorName = $"{classDeclaration.Identifier.Text}Decorator";
+                string decoratedType = decoratedTypeSymbol?.ToString() ?? classSymbol.ToString();
 
                 var generatedClass = new CodeGenClass(
                     decoratorName,
                     Scope.Public,
                     ClassType.Normal,
-                    genericTypes: generics);
+                    genericTypes: generics,
+                    derivedFrom: decoratedTypeSymbol != null ? new[] { decoratedTypeSymbol.ToString() } : null);
 
                 generatedClass.Comment = new CodeGenComment($@"Class: {decoratorName}
 Description: 
@@ -57,13 +68,13 @@ Auto-generated on {DateTime.Now}");
                 generatedClass.Constructors.Add(new CodeGenConstructor(
                     decoratorName,
                     Scope.Public,
-                    new[] { $"{classSymbol} decorated" },
+                    new[] { $"{decoratedType} decorated" },
                     "_Decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));"));
 
                 // Decorated variable
                 generatedClass.Variables.Add(new CodeGenVariable(
                     "_Decorated",
-                    classSymbol.ToString(),
+                    decoratedType,
                     Scope.Private,
                     readOnly: true));
 

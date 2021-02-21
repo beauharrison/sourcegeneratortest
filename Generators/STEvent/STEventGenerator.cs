@@ -62,7 +62,8 @@ namespace Generators.STEvent
                 @class.Variables.Add(new CodeGenVariable(
                     $"_{handlerName}",
                     handlerName,
-                    Scope.Private));
+                    Scope.Private,
+                    VariableType.Static));
 
                 // register method
                 @class.Methods.Add(new CodeGenMethod(
@@ -72,7 +73,7 @@ namespace Generators.STEvent
                     MethodType.Static,
                     genericTypes.Keys.Select((gt, i) => new CodeGenGeneric($"TPayload{i}", gt)),
                     new[] { $"Action<{string.Join(", ", genericTypes.Keys)}> handler" },
-                    $"_{handlerName} += handler"));
+                    $"_{handlerName} += new {handlerName}(handler);"));
 
                 // notify method
                 @class.Methods.Add(new CodeGenMethod(
@@ -82,7 +83,7 @@ namespace Generators.STEvent
                     MethodType.Static,
                     null,
                     argList,
-                    $"_{handlerName}?.Invoke({string.Join(", ", argNameList)})"));
+                    $"_{handlerName}?.Invoke({string.Join(", ", argNameList)});"));
             }
 
             @namespace.Usings.Add("System");

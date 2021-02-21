@@ -16,23 +16,35 @@ namespace Generators
             _AttributeNames = new HashSet<string>(attributeTypes.Select(GetAttributeName));
         }
 
-        public List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] attributes)> Classes = 
-            new List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] attributes)>();
+        public List<(ClassDeclarationSyntax classDelaration, AttributeSyntax attributeName)> Classes = 
+            new List<(ClassDeclarationSyntax classDelaration, AttributeSyntax attributeName)>();
         
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
         {
             if (syntaxNode is ClassDeclarationSyntax { AttributeLists: { Count: >= 1 } } classDeclaration)
             {
-                AttributeSyntax[] attributeSyntaxes = classDeclaration.AttributeLists
+                AttributeSyntax attributeSyntax = classDeclaration.AttributeLists
                     .SelectMany(attrList => attrList.Attributes)
-                    .Where(attr => attr.Name is IdentifierNameSyntax identfierName && _AttributeNames.Contains(identfierName.Identifier.Text))
-                    .ToArray();
+                    .Select(attr => (attr, GetAttributeIdentifierName(attr.Name)))
+                    .Where(attr => _AttributeNames.Contains(attr.Item2.Identifier.Text))
+                    .Select(attr => attr.Item1)
+                    .FirstOrDefault();
 
-                if (attributeSyntaxes.Any())
+                if (attributeSyntax != null)
                 {
-                    Classes.Add((classDeclaration, attributeSyntaxes));
+                    Classes.Add((classDeclaration, attributeSyntax));
                 }
             }
+        }
+
+        private IdentifierNameSyntax GetAttributeIdentifierName(NameSyntax attributeNameSyntax)
+        {
+            return attributeNameSyntax switch
+            {
+                QualifiedNameSyntax qns => GetAttributeIdentifierName(qns.Right),
+                IdentifierNameSyntax ins => ins,
+                _ => throw new NotSupportedException(attributeNameSyntax.GetType().Name)
+            };
         }
 
         private string GetAttributeName(Type type) => type.Name.Length > 9 && type.Name.EndsWith("Attribute")
