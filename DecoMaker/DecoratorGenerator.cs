@@ -15,7 +15,7 @@ namespace DecoMaker
     {
         public void Initialize(GeneratorInitializationContext context)
         {
-            if (!Debugger.IsAttached) { Debugger.Launch(); }
+            //if (!Debugger.IsAttached) { Debugger.Launch(); }
 
             context.RegisterForSyntaxNotifications(() => new ClassToBeDecoratedSyntaxReciever());
         }
@@ -47,7 +47,7 @@ namespace DecoMaker
                 foreach (AttributeSyntax decorateAttribute in validDecorateAttributes)
                 {
                     ClassTemplate template = TemplateParser.Parse(semanticModel, classSymbol, decorateAttribute);
-                    GenerateDecoratorUsingTemplate(context, classDeclaration, classSymbol, template);
+                    GenerateDecoratorUsingTemplate(context, classDeclaration, classSymbol, template, semanticModel);
                 }                
             }
         }
@@ -56,7 +56,8 @@ namespace DecoMaker
             GeneratorExecutionContext context, 
             ClassDeclarationSyntax classDeclaration,
             ISymbol classSymbol, 
-            ClassTemplate template)
+            ClassTemplate template,
+            SemanticModel semanticModel)
         {
             Dictionary<string, string> constraints = classDeclaration.ConstraintClauses.ToDictionary(
                 constraintClause => constraintClause.Name.Identifier.Text,
@@ -89,11 +90,11 @@ namespace DecoMaker
                 Scope.Private,
                 readOnly: true));
 
-            // TODO method generation
-            //GenerateDecoratorMethods(classDeclaration, generatedClass, semanticModel);
+            GenerateDecoratorMethods(classDeclaration, generatedClass, semanticModel, template);
 
             var generatedNamespace = new CodeGenNamespace($"{classSymbol.ContainingNamespace.Name}.Decorators");
             generatedNamespace.Content.Add(generatedClass);
+            generatedNamespace.Usings.Add("System");
 
             var generatedCodeString = generatedNamespace.GenerateCode();
 
@@ -107,21 +108,38 @@ namespace DecoMaker
             return SymbolEqualityComparer.Default.Equals(attributeType.Type, semanticModel.Compilation.GetTypeByMetadataName(typeof(DecorateAttribute).FullName));
         }
 
-        private void GenerateDecoratorMethods(ClassDeclarationSyntax classDeclaration, CodeGenClass decorator, SemanticModel semanticModel)
+        private void GenerateDecoratorMethods(
+            ClassDeclarationSyntax classDeclaration, 
+            CodeGenClass decorator, 
+            SemanticModel semanticModel,
+            ClassTemplate template)
         {
             var methods = classDeclaration.Members.OfType<MethodDeclarationSyntax>()
                 .Where(method => method.Modifiers.Any(m => m.Text == "public"));
 
+            MethodTemplateSelector selector = new MethodTemplateSelector(template.TemplateMethods);
+
             foreach (MethodDeclarationSyntax method in methods)
             {
+
+
                 Dictionary<string, string> constraints = method.ConstraintClauses.ToDictionary(
                     constraintClause => constraintClause.Name.Identifier.Text,
                     constraintClause => string.Join(", ", GetConstraintNames(constraintClause, semanticModel)));
 
                 IEnumerable<CodeGenGeneric> generics = method.TypeParameterList?.Parameters.Select(parameter => GenerateMethodParameter(parameter, constraints));
-                IEnumerable<string> parameters = method.ParameterList.Parameters.Select(parameter => $"{semanticModel.GetTypeInfo(parameter.Type).Type} {parameter.Identifier.Text}");
+                IEnumerable<(ParameterSyntax Parameter, TypeInfo TypeInfo)> parameterTypes = method.ParameterList.Parameters.Select(parameter => (Parameter: parameter, TypeInfo: semanticModel.GetTypeInfo(parameter.Type)));
 
-                var returnTypeInfo = semanticModel.GetTypeInfo(method.ReturnType);
+                IEnumerable<string> parameters = parameterTypes.Select(parameter => $"{parameter.TypeInfo.Type} {parameter.Parameter.Identifier.Text}");
+                TypeInfo returnTypeInfo = semanticModel.GetTypeInfo(method.ReturnType);
+
+                MethodTemplate matchingTemplate = selector.Pick(
+                    returnTypeInfo.Type.ToString(), 
+                    parameterTypes.Select(parameter => parameter.TypeInfo.Type.ToString()).ToArray());
+
+                string body = matchingTemplate != null
+                    ? GenerateDecoratorMethodBodyFromCondition(matchingTemplate, method)
+                    : GenerateUndecoratedMethodBody(method);
 
                 decorator.Methods.Add(new CodeGenMethod(
                     method.Identifier.Text,
@@ -130,7 +148,8 @@ namespace DecoMaker
                     MethodType.Normal,
                     generics,
                     parameters,
-                    GenerateMethodBody(method, classDeclaration, decorator.Name)));
+                    body,
+                    matchingTemplate?.Async ?? false));
             }
         }
 
@@ -144,6 +163,46 @@ namespace DecoMaker
                     _ => constraint.ToString()
                 };
             }
+        }
+
+        private string GenerateDecoratorMethodBodyFromCondition(MethodTemplate template, MethodDeclarationSyntax method)
+        {
+            IEnumerable<string> paramNameList = method.ParameterList.Parameters.Select(parameter => parameter.Identifier.Text);
+            string invocation = $"_Decorated.{method.Identifier.Text}({string.Join(", ", paramNameList)})";
+
+            string body = template.Body.Clone() as string;
+
+            if (method.ReturnType.ToString() == "void" && template.MatchOnCondition.ReturnTypeMatchOn == ReturnTypeMatchOn.Any)
+            {
+                body = body.Replace("return Decorated.Method.Invoke()", invocation);
+                body = body.Replace($"return Decorated.Method.Invoke<{template.MatchOnCondition.ReturnType}>()", invocation);
+            }
+            else
+            {
+                body = body.Replace("Decorated.Method.Invoke()", invocation);
+                body = body.Replace($"Decorated.Method.Invoke<{template.MatchOnCondition.ReturnType}>()", invocation);
+            }
+
+            // remove wrapping braces
+            body = body.TrimStart('{', '\r', '\n').TrimEnd('}');
+
+            // normalize tabs
+            body = body.Replace("\t", "    ");
+
+            // get index of first non-space character
+            char firstChar = body.First(c => c != ' ');
+            int firstCharIndex = body.IndexOf(firstChar);
+
+            // replace excessive whitespace based on first lines whitespace
+            body = body.Replace($"{Environment.NewLine}{new string(' ', firstCharIndex)}", Environment.NewLine).Trim();
+
+            return body;
+        }
+
+        private string GenerateUndecoratedMethodBody(MethodDeclarationSyntax method)
+        {
+            IEnumerable<string> paramNameList = method.ParameterList.Parameters.Select(parameter => parameter.Identifier.Text);
+            return $"_Decorated.{method.Identifier.Text}({string.Join(", ", paramNameList)});";
         }
 
         private string GenerateMethodBody(MethodDeclarationSyntax method, ClassDeclarationSyntax classDeclaration, string decoratorName)

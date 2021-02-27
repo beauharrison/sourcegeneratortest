@@ -3,7 +3,6 @@
     internal enum ParamTypeMatchOn
     {
         Any,
-        None,
         Specified
     }
 }

@@ -14,7 +14,8 @@ namespace CodeGen
             MethodType methodType, 
             IEnumerable<CodeGenGeneric> genericTypes,
             IEnumerable<string> parameters, 
-            string body)
+            string body,
+            bool async = false)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(nameof(name));
 
@@ -25,6 +26,7 @@ namespace CodeGen
             GenericTypes = genericTypes ?? new CodeGenGeneric[0];
             Parameters = parameters ?? new string[0];
             Body = body ?? string.Empty;
+            Async = async;
         }
 
         public string Name { get; }
@@ -40,7 +42,7 @@ namespace CodeGen
         public IEnumerable<string> Parameters { get; }
 
         public string Body { get; }
-
+        public bool Async { get; }
         public CodeGenComment Comment { get; set; }
 
         public string ReturnComment { get; }

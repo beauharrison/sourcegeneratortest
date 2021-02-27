@@ -19,7 +19,7 @@ namespace DecoMaker
 
             ClassDeclarationSyntax templateClassDeclaration = GetTemplateSyntax(semanticModel, attributeSyntax);
 
-            TemplateMethod[] templateMethods = templateClassDeclaration.Members
+            MethodTemplate[] templateMethods = templateClassDeclaration.Members
                 .OfType<MethodDeclarationSyntax>()
                 .Select(methodDeclaration => ParseMethod(semanticModel, methodDeclaration))
                 .ToArray();
@@ -76,7 +76,7 @@ namespace DecoMaker
             return classTemplateSyntax;
         }
 
-        private static TemplateMethod ParseMethod(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration)
+        private static MethodTemplate ParseMethod(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration)
         {
             var matchOnCondition = new MethodMatchOnCondition();
 
@@ -84,12 +84,13 @@ namespace DecoMaker
             PopulateParameterTypeMatchConditions(matchOnCondition, semanticModel, methodDeclaration);
 
             string body = methodDeclaration.ExpressionBody?.Expression != null
-                ? methodDeclaration.ExpressionBody.Expression.ToString()
+                ? $"return {methodDeclaration.ExpressionBody.Expression}" 
                 : methodDeclaration.Body.ToString();
 
-            return new TemplateMethod
+            return new MethodTemplate
             {
                 Name = methodDeclaration.Identifier.Text,
+                Async = methodDeclaration.Modifiers.Any(mod => mod.Text == "async"),
                 MatchOnCondition = matchOnCondition,
                 Body = body
             };
@@ -126,50 +127,26 @@ namespace DecoMaker
             SemanticModel semanticModel, 
             MethodDeclarationSyntax methodDeclaration)
         {
-            if (methodDeclaration.ReturnType is not QualifiedNameSyntax
-            {
-                Left: QualifiedNameSyntax
+            if (methodDeclaration.ReturnType is QualifiedNameSyntax
                 {
                     Left: QualifiedNameSyntax
                     {
-                        Left: IdentifierNameSyntax
+                        Left: QualifiedNameSyntax
                         {
-                            Identifier: { Text: "Decorated" }
+                            Left: IdentifierNameSyntax { Identifier: { Text: "Decorated" } },
+                            Right: IdentifierNameSyntax { Identifier: { Text: "Method" } }
                         },
-                        Right: IdentifierNameSyntax
-                        {
-                            Identifier: { Text: "Method" }
-                        }
+                        Right: IdentifierNameSyntax { Identifier: { Text: "Return" } }
                     },
-                    Right: IdentifierNameSyntax
-                    {
-                        Identifier: { Text: "Return" or "AsyncReturn" } returnKind
-                    }
-                }
-            } returnType)
-            {
-                throw new Exception("Unexpected template method return type.");
-            }
-
-            matchOnCondition.Async = returnKind.Text == "AsyncReturn";
-
-            // Get return type
-            if (returnType.Right is GenericNameSyntax { Identifier: { Text: "Of" } } of)
-            {
-                TypeSyntax type = of.TypeArgumentList.Arguments.FirstOrDefault() ?? throw new Exception("Something went wrong!");
-                matchOnCondition.ReturnType = semanticModel.GetTypeInfo(type).Type.ToString();
-            }
-            else if (returnType.Right is IdentifierNameSyntax { Identifier: { Text: "Void" } })
-            {
-                matchOnCondition.ReturnTypeMatchOn = ReturnTypeMatchOn.Void;
-            }
-            else if (returnType.Right is IdentifierNameSyntax { Identifier: { Text: "Any" } })
+                    Right: IdentifierNameSyntax { Identifier: { Text: "Any" } }
+                } anyReturnType)
             {
                 matchOnCondition.ReturnTypeMatchOn = ReturnTypeMatchOn.Any;
             }
             else
             {
-                throw new Exception("Unexpected template method return type.");
+                matchOnCondition.ReturnTypeMatchOn = ReturnTypeMatchOn.Specified;
+                matchOnCondition.ReturnType = semanticModel.GetTypeInfo(methodDeclaration.ReturnType).Type.ToString();
             }
         }
 
@@ -178,12 +155,7 @@ namespace DecoMaker
             SemanticModel semanticModel,
             MethodDeclarationSyntax methodDeclaration)
         {
-            var paramTypes = new List<(string Type, string Name)>();
-
-            if (methodDeclaration.ParameterList.Parameters.Count < 1)
-            {
-                throw new Exception("Template method needs at least one paramter. Use `Decorated.Method.Param.Any`, or `Decorated.Method.Param.None` to specifically match on 0 parameter method.");
-            }
+            var paramTypes = new Dictionary<string, string>();
 
             foreach (ParameterSyntax parameter in methodDeclaration.ParameterList.Parameters)
             {
@@ -193,48 +165,25 @@ namespace DecoMaker
                         {
                             Left: QualifiedNameSyntax
                             {
-                                Left: IdentifierNameSyntax
-                                {
-                                    Identifier: { Text: "Decorated" }
-                                },
-                                Right: IdentifierNameSyntax
-                                {
-                                    Identifier: { Text: "Method" }
-                                }
+                                Left: IdentifierNameSyntax { Identifier: { Text: "Decorated" } },
+                                Right: IdentifierNameSyntax { Identifier: { Text: "Method" } }
                             },
-                            Right: IdentifierNameSyntax
-                            {
-                                Identifier: { Text: "Param" }
-                            }
-                        }
-                    } paramType)
-                {
-                    throw new Exception("Unexpected template method parameter type.");
-                }
-
-                if (paramType.Right is GenericNameSyntax { Identifier: { Text: "Of" } } of)
-                {
-                    TypeSyntax type = of.TypeArgumentList.Arguments.FirstOrDefault() ?? throw new Exception("Something went wrong!");
-                    paramTypes.Add((semanticModel.GetTypeInfo(type).Type.ToString(), parameter.Identifier.Text));
-                }
-                else if (paramType.Right is IdentifierNameSyntax { Identifier: { Text: "Any" } } any)
+                            Right: IdentifierNameSyntax { Identifier: { Text: "Param" } }
+                        },
+                        Right: IdentifierNameSyntax { Identifier: { Text: "Any" } }
+                    })
                 {
                     matchOnCondition.ParamTypeMatchOn = ParamTypeMatchOn.Any;
-                    break;
-                }
-                else if (paramType.Right is IdentifierNameSyntax { Identifier: { Text: "None" } } none)
-                {
-                    matchOnCondition.ParamTypeMatchOn = ParamTypeMatchOn.None;
-                    break;
+                    return;
                 }
                 else
                 {
-                    throw new Exception("Unexpected template method parameter type.");
+                    paramTypes.Add(semanticModel.GetTypeInfo(parameter.Type).Type.ToString(), parameter.Identifier.Text);
                 }
             }
 
             matchOnCondition.ParamTypeMatchOn = ParamTypeMatchOn.Specified;
-            matchOnCondition.Params = paramTypes.ToArray();
+            matchOnCondition.Params = paramTypes;
         }
     }
 }

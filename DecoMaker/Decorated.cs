@@ -6,17 +6,9 @@ namespace DecoMaker
     {
         public class Method
         {
-            public class Param
+            public class Params
             {
                 public class Any
-                {
-                }
-
-                public class None
-                {
-                }
-
-                public class Of<T>
                 {
                 }
             }
@@ -26,29 +18,6 @@ namespace DecoMaker
                 public class Any
                 {
                 }
-
-                public class Of<T>
-                {
-                }
-
-                public class Void
-                {
-                }
-            }
-
-            public class AsyncReturn
-            {
-                public class Any
-                {
-                }
-
-                public class Of<T>
-                {
-                }
-
-                public class Task
-                {
-                }
             }
 
             public static Return.Any Invoke()
@@ -56,17 +25,7 @@ namespace DecoMaker
                 throw new NotImplementedException("This should not be run.");
             }
 
-            public static Return.Of<T> Invoke<T>()
-            {
-                throw new NotImplementedException("This should not be run.");
-            }
-
-            public static AsyncReturn.Any InvokeAsync()
-            {
-                throw new NotImplementedException("This should not be run.");
-            }
-
-            public static AsyncReturn.Of<T> InvokeAsync<T>()
+            public static T Invoke<T>()
             {
                 throw new NotImplementedException("This should not be run.");
             }
@@ -81,7 +40,7 @@ namespace DecoMaker
 
             public class Of<T>
             {
-                public static Of<T> Value { get; set; }
+                public static T Value { get; set; }
             }
         }
     }

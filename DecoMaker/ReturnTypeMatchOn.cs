@@ -3,7 +3,6 @@
     internal enum ReturnTypeMatchOn
     {
         Any,
-        Void,
         Specified
     }
 }
