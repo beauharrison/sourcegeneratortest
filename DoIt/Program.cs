@@ -44,37 +44,37 @@ namespace DoIt
             //var b = DIService.Get<TestStuff>();
             //var c = DIService.Get<TestJunk>();
 
-            STEvent.Register<MyImportantEvent>(MyHandler);
-            STEvent.Register<MyImportantEvent>(MyHandler2);
-            STEvent.Notify(new MyImportantEvent { Name = "John" });
-            STEvent.Notify(new MyImportantEvent { Name = "Timmy" });
+            //STEvent.Register<MyImportantEvent>(MyHandler);
+            //STEvent.Register<MyImportantEvent>(MyHandler2);
+            //STEvent.Notify(new MyImportantEvent { Name = "John" });
+            //STEvent.Notify(new MyImportantEvent { Name = "Timmy" });
 
-            var a = new MyGreatClassDecorator<string>(new MyGreatClass<string>("hello"));
-            var b = new MyOtherGreatClassDecorator(new MyOtherGreatClass());
+            //var a = new MyGreatClassDecorator<string>(new MyGreatClass<string>("hello"));
+            //var b = new MyOtherGreatClassDecorator(new MyOtherGreatClass());
 
-            try
-            {
-                a.DoSomething(3, new Aa());
-            }
-            catch
-            {
-            }
+            //try
+            //{
+            //    a.DoSomething(3, new Aa());
+            //}
+            //catch
+            //{
+            //}
 
-            try
-            { 
-                a.GetIt();
-            }
-            catch
-            {
-            }
+            //try
+            //{ 
+            //    a.GetIt();
+            //}
+            //catch
+            //{
+            //}
 
-            try
-            { 
-                a.GetNumber();
-            }
-            catch
-            {
-            }
+            //try
+            //{ 
+            //    a.GetNumber();
+            //}
+            //catch
+            //{
+            //}
 
         }
 
