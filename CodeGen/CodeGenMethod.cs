@@ -42,7 +42,9 @@ namespace CodeGen
         public IEnumerable<string> Parameters { get; }
 
         public string Body { get; }
+
         public bool Async { get; }
+
         public CodeGenComment Comment { get; set; }
 
         public string ReturnComment { get; }
@@ -73,6 +75,11 @@ namespace CodeGen
             {
                 builder.Append(MethodType.ToString().ToLower());
                 builder.Append(" ");
+            }
+
+            if (Async)
+            {
+                builder.Append("async ");
             }
 
             var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;

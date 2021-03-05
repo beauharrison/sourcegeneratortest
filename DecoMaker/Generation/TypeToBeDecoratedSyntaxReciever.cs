@@ -4,20 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DecoMaker
+namespace DecoMaker.Generation
 {
-    internal class ClassToBeDecoratedSyntaxReciever : ISyntaxReceiver
+    internal class TypeToBeDecoratedSyntaxReciever : ISyntaxReceiver
     {
-        public List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] decorateAttributes)> Classes =
-            new List<(ClassDeclarationSyntax classDelaration, AttributeSyntax[] decorateAttributes)>();
+        public List<TypeToBeDecorated> Classes = new List<TypeToBeDecorated>();
 
         private static readonly string DecorateAttributeName = "Decorate";
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
         {
-            if (syntaxNode is ClassDeclarationSyntax { AttributeLists: { Count: >= 1 } } classDeclaration)
+            if (syntaxNode is TypeDeclarationSyntax { AttributeLists: { Count: >= 1 } } typeDeclaration)
             {
-                AttributeSyntax[] attributeSyntax = classDeclaration.AttributeLists
+                AttributeSyntax[] attributeSyntax = typeDeclaration.AttributeLists
                     .SelectMany(attrList => attrList.Attributes)
                     .Select(attr => (attr, GetAttributeIdentifierName(attr.Name)))
                     .Where(attr => attr.Item2.Identifier.Text.StartsWith(DecorateAttributeName))
@@ -26,7 +25,11 @@ namespace DecoMaker
 
                 if (attributeSyntax != null)
                 {
-                    Classes.Add((classDeclaration, attributeSyntax));
+                    Classes.Add(new TypeToBeDecorated 
+                    { 
+                        TypeDeclaration = typeDeclaration, 
+                        DecorateAttributes = attributeSyntax 
+                    });
                 }
             }
         }

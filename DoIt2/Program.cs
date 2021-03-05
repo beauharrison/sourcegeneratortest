@@ -1,6 +1,7 @@
 ﻿using DecoMaker;
 using System;
 using System.Threading.Tasks;
+using DoIt2.Decorators;
 
 namespace DoIt2
 {
@@ -8,9 +9,10 @@ namespace DoIt2
     {
         static void Main(string[] args)
         {
-            new Decorators.Class1ErrorDecorator(new Class1());
+            new Class1ErrorDecorator(new Class1(), "", 3);
 
-            Console.WriteLine("Hello World!");
+            new Class1ErrorDecorator(new Class1(), "jimmy", 44);
+            
         }
     }
 
@@ -22,63 +24,100 @@ namespace DoIt2
     [Decorate("Error", typeof(MyTemplate), typeof(IThing))]
     public class Class1
     {
-        public void Method1()
+        public string Method1()
         {
+            return null;
         }
 
-        public string Method2()
+        public Task<string> Method2()
         {
-            return "hello";
+            return Task.FromResult("hello");
         }
 
-        public string Method3(int a)
+        public async Task<string> Method3()
         {
-            return "hello";
+            return await Task.FromResult("hello");
         }
 
-        public int Method4(string a)
-        {
-            return 44;
-        }
+        public int Num { get; set; }
 
-        public long Method5(int a, int b)
-        {
-            return (long) a + b;
-        }
+        //public string Method3(int a)
+        //{
+        //    return "hello";
+        //}
 
-        public long Method6(string s)
-        {
-            return 4;
-        }
+        //public int Method4(string a)
+        //{
+        //    return 44;
+        //}
+
+        //public long Method5(int a, int b)
+        //{
+        //    return (long) a + b;
+        //}
+
+        //public long Method6(string s)
+        //{
+        //    return 4;
+        //}
     }
 
     public class MyTemplate
     {
-        public string sss()
+        public MyTemplate(string name, int timeout)
         {
-            throw new NotFiniteNumberException();
-            return Decorated.Method.Invoke<string>();
+
         }
 
-        public string sss(Decorated.Method.Params.Any _)
+        public string _AnyString(Decorated.Method.Params.Any _)
         {
             // do stuff
             return Decorated.Method.Invoke<string>();
         }
 
-        public Decorated.Method.Return.Any Default(Decorated.Method.Params.Any _)
+        public void _idk()
         {
-            try
+            Decorated.Method.Invoke();
+        }
+
+        public Task<string> _AnyTaskString(Decorated.Method.Params.Any _)
+        {
+            // do things in a task
+            return Decorated.Method.Invoke<Task<string>>();
+        }
+
+        public async Task<string> _AnyStringAsync(Decorated.Method.Params.Any _)
+        {
+            // do things async
+            return await Decorated.Method.Invoke<Task<string>>();
+        }
+
+        public Decorated.Property.Any _AnyP
+        {
+            get
             {
-                return Decorated.Method.Invoke();
+                // something
+                return Decorated.Property.Any.Value;
             }
-            catch
+            set
             {
-                Console.Write("Catch all!");
-                throw;
+                // idk
+                Decorated.Property.Any.Value = value;
             }
         }
 
-
+        public Decorated.Property.Any _AnyP2
+        {
+            get
+            {
+                // pie
+                return Decorated.Property.Any.Value;
+            }
+            set
+            {
+                // adkdk
+                Decorated.Property.Any.Value = value;
+            }
+        }
     }
 }

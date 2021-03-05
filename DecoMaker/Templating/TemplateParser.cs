@@ -1,14 +1,26 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using DecoMaker.Common;
+using DecoMaker.Templating;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DecoMaker
+namespace DecoMaker.Templating
 {
-    internal class TemplateParser
+    /// <summary>
+    /// Parses template data from the template classes compiler syntax definitions.
+    /// </summary>
+    internal static class TemplateParser
     {
+        /// <summary>
+        /// Parse template data from a template class complier syntax definition.
+        /// </summary>
+        /// <param name="semanticModel">The semantic model to retrieve syntax from.</param>
+        /// <param name="decoratedClassSymbol">Symbol of the class to be decorated.</param>
+        /// <param name="attributeSyntax">Syntax of the <see cref="DecorateAttribute"/> targeting a template.</param>
+        /// <returns>The class template.</returns>
         public static ClassTemplate Parse(
             SemanticModel semanticModel,
             ISymbol decoratedClassSymbol,
@@ -19,13 +31,27 @@ namespace DecoMaker
 
             ClassDeclarationSyntax templateClassDeclaration = GetTemplateSyntax(semanticModel, attributeSyntax);
 
+            ConstructorParam[] constructorParams = templateClassDeclaration.Members
+                .OfType<ConstructorDeclarationSyntax>()
+                .FirstOrDefault()
+               ?.ParameterList
+                .Parameters
+                .Select(param => new ConstructorParam
+                {
+                    Name = param.Identifier.Text,
+                    Type = param.Type.ToString()
+                })
+                .ToArray();
+
             MethodTemplate[] templateMethods = templateClassDeclaration.Members
                 .OfType<MethodDeclarationSyntax>()
+                .Where(methodDeclaration => methodDeclaration.IsPublic())
                 .Select(methodDeclaration => ParseMethod(semanticModel, methodDeclaration))
                 .ToArray();
 
-            TemplateProperty[] templateProperties = templateClassDeclaration.Members
+            PropertyTemplate[] templateProperties = templateClassDeclaration.Members
                 .OfType<PropertyDeclarationSyntax>()
+                .Where(methodDeclaration => methodDeclaration.IsPublic())
                 .Select(propertyDeclaration => ParseProperty(semanticModel, propertyDeclaration))
                 .ToArray();
 
@@ -33,6 +59,7 @@ namespace DecoMaker
             {
                 Label = templateName,
                 ImplementationType = implementationType,
+                ConstructorParams = constructorParams,
                 TemplateMethods = templateMethods,
                 TemplateProperties = templateProperties
             };
@@ -78,10 +105,10 @@ namespace DecoMaker
 
         private static MethodTemplate ParseMethod(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration)
         {
-            var matchOnCondition = new MethodMatchOnCondition();
+            var matchCondition = new MethodTemplateMatchCondition();
 
-            PopulateReturnTypeMatchConditions(matchOnCondition, semanticModel, methodDeclaration);
-            PopulateParameterTypeMatchConditions(matchOnCondition, semanticModel, methodDeclaration);
+            PopulateReturnTypeMatchConditions(matchCondition, semanticModel, methodDeclaration);
+            PopulateParameterTypeMatchConditions(matchCondition, semanticModel, methodDeclaration);
 
             string body = methodDeclaration.ExpressionBody?.Expression != null
                 ? $"return {methodDeclaration.ExpressionBody.Expression}" 
@@ -90,20 +117,20 @@ namespace DecoMaker
             return new MethodTemplate
             {
                 Name = methodDeclaration.Identifier.Text,
-                Async = methodDeclaration.Modifiers.Any(mod => mod.Text == "async"),
-                MatchOnCondition = matchOnCondition,
+                Async = methodDeclaration.IsAsync(),
+                MatchCondition = matchCondition,
                 Body = body
             };
         }
 
-        private static TemplateProperty ParseProperty(SemanticModel semanticModel, PropertyDeclarationSyntax propertyDeclaration)
+        private static PropertyTemplate ParseProperty(SemanticModel semanticModel, PropertyDeclarationSyntax propertyDeclaration)
         {
-            var matchOnCondition = new PropertyMatchOnCondition();
+            var matchOnCondition = new PropertyTemplateMatchCondition();
 
-            var templateProperty = new TemplateProperty
+            var templateProperty = new PropertyTemplate
             {
                 Name = propertyDeclaration.Identifier.Text,
-                MatchOnCondition = matchOnCondition
+                MatchCondition = matchOnCondition
             };
 
             if (propertyDeclaration.ExpressionBody != null)
@@ -123,7 +150,7 @@ namespace DecoMaker
         }
 
         private static void PopulateReturnTypeMatchConditions(
-            MethodMatchOnCondition matchOnCondition, 
+            MethodTemplateMatchCondition matchOnCondition, 
             SemanticModel semanticModel, 
             MethodDeclarationSyntax methodDeclaration)
         {
@@ -141,17 +168,17 @@ namespace DecoMaker
                     Right: IdentifierNameSyntax { Identifier: { Text: "Any" } }
                 } anyReturnType)
             {
-                matchOnCondition.ReturnTypeMatchOn = ReturnTypeMatchOn.Any;
+                matchOnCondition.ReturnTypeRule = ReturnTypeRule.Any;
             }
             else
             {
-                matchOnCondition.ReturnTypeMatchOn = ReturnTypeMatchOn.Specified;
+                matchOnCondition.ReturnTypeRule = ReturnTypeRule.Specified;
                 matchOnCondition.ReturnType = semanticModel.GetTypeInfo(methodDeclaration.ReturnType).Type.ToString();
             }
         }
 
         private static void PopulateParameterTypeMatchConditions(
-            MethodMatchOnCondition matchOnCondition,
+            MethodTemplateMatchCondition matchOnCondition,
             SemanticModel semanticModel,
             MethodDeclarationSyntax methodDeclaration)
         {
@@ -173,7 +200,7 @@ namespace DecoMaker
                         Right: IdentifierNameSyntax { Identifier: { Text: "Any" } }
                     })
                 {
-                    matchOnCondition.ParamTypeMatchOn = ParamTypeMatchOn.Any;
+                    matchOnCondition.ParamTypeRule = ParamTypeRule.Any;
                     return;
                 }
                 else
@@ -182,7 +209,7 @@ namespace DecoMaker
                 }
             }
 
-            matchOnCondition.ParamTypeMatchOn = ParamTypeMatchOn.Specified;
+            matchOnCondition.ParamTypeRule = ParamTypeRule.Specified;
             matchOnCondition.Params = paramTypes;
         }
     }

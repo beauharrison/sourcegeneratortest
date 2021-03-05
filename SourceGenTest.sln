@@ -9,11 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Generators", "Generators\Ge
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneratedApi", "GeneratedApi\GeneratedApi.csproj", "{B3CFCF92-FC93-4317-AAAA-E3529DDB952E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DecoMaker", "DecoMaker\DecoMaker.csproj", "{80F9CEE6-1EA0-4E6B-B73B-3D95EFF4F06E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DecoMaker", "DecoMaker\DecoMaker.csproj", "{80F9CEE6-1EA0-4E6B-B73B-3D95EFF4F06E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeGen", "CodeGen\CodeGen.csproj", "{AEBD05A6-1563-465C-8641-D84569F517D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeGen", "CodeGen\CodeGen.csproj", "{AEBD05A6-1563-465C-8641-D84569F517D1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoIt2", "DoIt2\DoIt2.csproj", "{4BCF15B3-98D3-42E0-A96D-EFCEC799320B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DoIt2", "DoIt2\DoIt2.csproj", "{4BCF15B3-98D3-42E0-A96D-EFCEC799320B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
