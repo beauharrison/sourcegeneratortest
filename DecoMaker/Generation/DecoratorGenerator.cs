@@ -16,8 +16,8 @@ namespace DecoMaker.Generation
     [Generator]
     internal class DecoratorGenerator : ISourceGenerator
     {
-        private static Regex MethodInvokeRegex = new Regex("Decorated\\.Method\\.Invoke(?:<.*>)\\(\\)", RegexOptions.Compiled);
-        private static Regex VoidReturnMethodInvokeRegex = new Regex("return Decorated\\.Method\\.Invoke(?:<.*>)\\(\\)", RegexOptions.Compiled);
+        private static Regex MethodInvokeRegex = new Regex("Decorated\\.Method\\.Invoke(?:<.*>)?\\(\\)", RegexOptions.Compiled);
+        private static Regex VoidReturnMethodInvokeRegex = new Regex("return Decorated\\.Method\\.Invoke(?:<.*>)?\\(\\)", RegexOptions.Compiled);
 
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -53,7 +53,6 @@ namespace DecoMaker.Generation
                 {
                     ClassTemplate template = TemplateParser.Parse(semanticModel, typeSymbol, decorateAttribute);
                     GenerateDecoratorUsingTemplate(context, typeToBeDecorated.TypeDeclaration, typeSymbol, template, semanticModel);
-
                 }
             }
         }
@@ -98,7 +97,7 @@ namespace DecoMaker.Generation
                 Scope.Public,
                 ClassType.Normal,
                 genericTypes: generics,
-                derivedFrom: template.ImplementationType != null ? new[] { template.ImplementationType } : null);
+                derivedFrom: typeDeclaration is InterfaceDeclarationSyntax ? new[] { typeDeclaration.Identifier.Text } : null);
 
             generatedDecoratorClass.Comment = new CodeGenComment($@"Generated {template.Label} decorator for the {classSymbol} class. Auto-generated on {DateTimeOffset.Now}");
 
@@ -107,16 +106,19 @@ namespace DecoMaker.Generation
 
             constructorBodyBuilder.AppendLine("_Decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));");
 
-            foreach (ConstructorParam constructorParam in template.ConstructorParams)
+            if (template.ConstructorParams != null)
             {
-                constructorParams.Add($"{constructorParam.Type} {constructorParam.Name}");
-                constructorBodyBuilder.AppendLine($"_{constructorParam.Name} = {constructorParam.Name};");
+                foreach (ConstructorParam constructorParam in template.ConstructorParams)
+                {
+                    constructorParams.Add($"{constructorParam.Type} {constructorParam.Name}");
+                    constructorBodyBuilder.AppendLine($"_{constructorParam.Name} = {constructorParam.Name};");
 
-                generatedDecoratorClass.Variables.Add(new CodeGenVariable(
-                    $"_{constructorParam.Name}",
-                    constructorParam.Type,
-                    Scope.Private,
-                    readOnly: true));
+                    generatedDecoratorClass.Variables.Add(new CodeGenVariable(
+                        $"_{constructorParam.Name}",
+                        constructorParam.Type,
+                        Scope.Private,
+                        readOnly: true));
+                }
             }
 
             // Constructor
@@ -156,7 +158,7 @@ namespace DecoMaker.Generation
             if (typeDeclaration is ClassDeclarationSyntax)
                 methods = methods.Where(method => method.IsPublic());
 
-            MethodTemplateSelector selector = new MethodTemplateSelector(template.TemplateMethods);
+            IMethodTemplateSelector selector = new MethodTemplateSelector(template.TemplateMethods);
 
             foreach (MethodDeclarationSyntax method in methods)
             {
@@ -277,7 +279,6 @@ namespace DecoMaker.Generation
             body = body.Replace("Decorated.Property.Any.Value", $"_Decorated.{property.Identifier.Text}");
 
             return CleanBody(body);
-
         }
 
         private string GenerateUndecoratedPropertyGetterBody(PropertyDeclarationSyntax property)
@@ -297,22 +298,6 @@ namespace DecoMaker.Generation
         private string GenerateUndecoratedPropertySetterBody(PropertyDeclarationSyntax property)
         {
             return $"_Decorated.{property.Identifier.Text} = value;";
-        }
-
-        private string CleanBody(string body)
-        {
-            // remove wrapping braces
-            body = body.TrimStart('{', '\r', '\n').TrimEnd('}');
-
-            // normalize tabs
-            body = body.Replace("\t", "    ");
-
-            // get index of first non-space character
-            char firstChar = body.First(c => c != ' ');
-            int firstCharIndex = body.IndexOf(firstChar);
-
-            // replace excessive whitespace based on first lines whitespace
-            return body.Replace($"{Environment.NewLine}{new string(' ', firstCharIndex)}", Environment.NewLine).Trim();
         }
 
         private CodeGenGeneric GenerateMethodParameter(TypeParameterSyntax parameter, Dictionary<string, string> constraints)

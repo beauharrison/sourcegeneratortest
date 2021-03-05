@@ -27,7 +27,6 @@ namespace DecoMaker.Templating
             AttributeSyntax attributeSyntax)
         {
             string templateName = GetTemplateName(decoratedClassSymbol, attributeSyntax);
-            string implementationType = GetImplementationType(semanticModel, attributeSyntax);
 
             ClassDeclarationSyntax templateClassDeclaration = GetTemplateSyntax(semanticModel, attributeSyntax);
 
@@ -58,7 +57,6 @@ namespace DecoMaker.Templating
             return new ClassTemplate
             {
                 Label = templateName,
-                ImplementationType = implementationType,
                 ConstructorParams = constructorParams,
                 TemplateMethods = templateMethods,
                 TemplateProperties = templateProperties
@@ -72,16 +70,6 @@ namespace DecoMaker.Templating
 
             string name = matchingAttribute?.ConstructorArguments.FirstOrDefault().Value?.ToString();
             return !string.IsNullOrWhiteSpace(name) ? name : throw new Exception("Valid name not proivded in Decorate attribute");
-        }
-                
-        private static string GetImplementationType(SemanticModel semanticModel, AttributeSyntax attributeSyntax)
-        {
-            if (attributeSyntax.ArgumentList.Arguments.Count < 3) return null;
-
-            var typeOfExpression = (TypeOfExpressionSyntax) attributeSyntax.ArgumentList.Arguments[2].Expression;
-            var typeOfTypeNameSyntax = (IdentifierNameSyntax) typeOfExpression.Type;
-
-            return semanticModel.GetSymbolInfo(typeOfTypeNameSyntax).Symbol.ToString();
         }
 
         private static ClassDeclarationSyntax GetTemplateSyntax(SemanticModel semanticModel, AttributeSyntax attributeSyntax)

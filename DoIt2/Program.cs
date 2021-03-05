@@ -9,19 +9,34 @@ namespace DoIt2
     {
         static void Main(string[] args)
         {
-            new Class1ErrorDecorator(new Class1(), "", 3);
+            //new Class1ErrorDecorator(new Class1(), "", 3);
 
-            new Class1ErrorDecorator(new Class1(), "jimmy", 44);
-            
+            //new Class1ErrorDecorator(new Class1(), "jimmy", 44);
+
+            var a = new IServiceLoggerDecorator(new MyService());
         }
     }
 
     public interface IThing
     {
-
     }
 
-    [Decorate("Error", typeof(MyTemplate), typeof(IThing))]
+    [Decorate("Logger", typeof(MyTemplate))]
+    public interface IService
+    {
+        int Run(string a);
+    }
+
+    public class MyService : IService
+    {
+        public void Run()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    [Decorate("Error", typeof(MyTemplate))]
+    [Decorate("Something", typeof(MyTemplate))]
     public class Class1
     {
         public string Method1()
@@ -64,60 +79,67 @@ namespace DoIt2
 
     public class MyTemplate
     {
-        public MyTemplate(string name, int timeout)
-        {
+        //public MyTemplate(string name, int timeout)
+        //{
 
-        }
+        //}
 
-        public string _AnyString(Decorated.Method.Params.Any _)
-        {
-            // do stuff
-            return Decorated.Method.Invoke<string>();
-        }
+        //public string _AnyString(Decorated.Method.Params.Any _)
+        //{
+        //    // do stuff
+        //    return Decorated.Method.Invoke<string>();
+        //}
 
         public void _idk()
         {
+            // hello
             Decorated.Method.Invoke();
         }
 
-        public Task<string> _AnyTaskString(Decorated.Method.Params.Any _)
+        public Decorated.Method.Return.Any _somthfk(Decorated.Method.Params.Any _)
         {
-            // do things in a task
-            return Decorated.Method.Invoke<Task<string>>();
+            // there
+            return Decorated.Method.Invoke();
         }
 
-        public async Task<string> _AnyStringAsync(Decorated.Method.Params.Any _)
-        {
-            // do things async
-            return await Decorated.Method.Invoke<Task<string>>();
-        }
+        //public Task<string> _AnyTaskString(Decorated.Method.Params.Any _)
+        //{
+        //    // do things in a task
+        //    return Decorated.Method.Invoke<Task<string>>();
+        //}
 
-        public Decorated.Property.Any _AnyP
-        {
-            get
-            {
-                // something
-                return Decorated.Property.Any.Value;
-            }
-            set
-            {
-                // idk
-                Decorated.Property.Any.Value = value;
-            }
-        }
+        //public async Task<string> _AnyStringAsync(Decorated.Method.Params.Any _)
+        //{
+        //    // do things async
+        //    return await Decorated.Method.Invoke<Task<string>>();
+        //}
 
-        public Decorated.Property.Any _AnyP2
-        {
-            get
-            {
-                // pie
-                return Decorated.Property.Any.Value;
-            }
-            set
-            {
-                // adkdk
-                Decorated.Property.Any.Value = value;
-            }
-        }
+        //public Decorated.Property.Any _AnyP
+        //{
+        //    get
+        //    {
+        //        // something
+        //        return Decorated.Property.Any.Value;
+        //    }
+        //    set
+        //    {
+        //        // idk
+        //        Decorated.Property.Any.Value = value;
+        //    }
+        //}
+
+        //public Decorated.Property.Any _AnyP2
+        //{
+        //    get
+        //    {
+        //        // pie
+        //        return Decorated.Property.Any.Value;
+        //    }
+        //    set
+        //    {
+        //        // adkdk
+        //        Decorated.Property.Any.Value = value;
+        //    }
+        //}
     }
 }

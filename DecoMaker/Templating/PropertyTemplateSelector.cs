@@ -7,7 +7,7 @@ namespace DecoMaker.Templating
     /// <summary>
     /// Selects the best property template for a property being decorated.
     /// </summary>
-    internal class PropertyTemplateSelector
+    internal class PropertyTemplateSelector : IPropertyTemplateSelector
     {
         private readonly IEnumerable<PropertyTemplate> _Templates;
 
@@ -20,13 +20,7 @@ namespace DecoMaker.Templating
             _Templates = templates ?? throw new ArgumentNullException(nameof(templates));
         }
 
-        /// <summary>
-        /// Select the best property template for a property.
-        /// </summary>
-        /// <param name="propertyName">The name of the property being decorated.</param>
-        /// <param name="propertyType">The type of the property.</param>
-        /// <param name="hasSetter">If the property has a setter.</param>
-        /// <returns>The selected best method template, or null if there was none.</returns>
+        /// <inheritdoc />
         public PropertyTemplate Select(string propertyName, string propertyType, bool hasSetter)
         {
             var ordered = _Templates
