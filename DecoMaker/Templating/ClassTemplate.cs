@@ -12,28 +12,16 @@ namespace DecoMaker.Templating
         /// </summary>
         public string Label { get; set; }
 
-        /// <summary>
-        /// Type the generated decorator should implement.
-        /// </summary>
-        public string ImplementationType { get; set; }
-
         public ConstructorParam[] ConstructorParams { get; set; }
 
         /// <summary>
         /// Templates for methods in the decorator.
         /// </summary>
-        public MethodTemplate[] TemplateMethods { get; set; }
+        public MethodTemplate[] MethodTemplates { get; set; }
 
         /// <summary>
         /// Templates for properties in the decorator.
         /// </summary>
-        public PropertyTemplate[] TemplateProperties { get; set; }
-    }
-
-    public class ConstructorParam
-    {
-        public string Name { get; set; }
-
-        public string Type { get; set; }
+        public PropertyTemplate[] PropertyTemplates { get; set; }
     }
 }
