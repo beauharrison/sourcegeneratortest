@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace DecoMaker.Templating
 {
-
     /// <summary>
     /// Selects the best method template for a method being decorated.
     /// </summary>
@@ -50,7 +50,7 @@ namespace DecoMaker.Templating
             return condition.ParamTypeRule switch
             {
                 ParamTypeRule.Any => true,
-                ParamTypeRule.Specified => paramTypes.SequenceEqual(condition.Params.Keys, StringComparer.Ordinal),
+                ParamTypeRule.Specified => Enumerable.SequenceEqual(paramTypes ?? new string[0], condition.Params.Keys, StringComparer.Ordinal),
                 _ => throw new NotImplementedException(condition.ParamTypeRule.ToString())
             };
         }

@@ -9,7 +9,8 @@ namespace DecoMaker.Generation
     {
         internal static CodeGenGeneric GenerateMethodParameter(string genericType, IDictionary<string, string> constraints)
         {
-            constraints.TryGetValue(genericType, out string constraint);
+            string constraint = null;
+            constraints?.TryGetValue(genericType, out constraint);
             return new CodeGenGeneric(genericType, constraint);
         }
 

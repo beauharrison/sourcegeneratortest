@@ -58,8 +58,8 @@ namespace DecoMaker.Templating
             {
                 Label = templateName,
                 ConstructorParams = constructorParams,
-                TemplateMethods = templateMethods,
-                TemplateProperties = templateProperties
+                MethodTemplates = templateMethods,
+                PropertyTemplates = templateProperties
             };
         }
 

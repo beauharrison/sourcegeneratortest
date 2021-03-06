@@ -17,11 +17,11 @@ namespace DecoMaker.Templating
         /// <summary>
         /// Templates for methods in the decorator.
         /// </summary>
-        public MethodTemplate[] TemplateMethods { get; set; }
+        public MethodTemplate[] MethodTemplates { get; set; }
 
         /// <summary>
         /// Templates for properties in the decorator.
         /// </summary>
-        public PropertyTemplate[] TemplateProperties { get; set; }
+        public PropertyTemplate[] PropertyTemplates { get; set; }
     }
 }

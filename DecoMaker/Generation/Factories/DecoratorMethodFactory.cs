@@ -11,27 +11,28 @@ namespace DecoMaker.Generation
     {
         private static Regex MethodInvokeRegex = new Regex("Decorated\\.Method\\.Invoke(?:<.*>)?\\(\\)", RegexOptions.Compiled);
         private static Regex VoidReturnMethodInvokeRegex = new Regex("return Decorated\\.Method\\.Invoke(?:<.*>)?\\(\\)", RegexOptions.Compiled);
+        
+        private readonly IMethodTemplateSelectorFactory _SelectorFactory;
 
-
-        private readonly IMethodTemplateSelector _MethodTemplateSelector;
-
-        public DecoratorMethodFactory(IMethodTemplateSelector methodTemplateSelector)
+        public DecoratorMethodFactory(IMethodTemplateSelectorFactory selectorFactory)
         {
-            _MethodTemplateSelector = methodTemplateSelector ?? throw new ArgumentNullException(nameof(methodTemplateSelector));
+            _SelectorFactory = selectorFactory ?? throw new ArgumentNullException(nameof(selectorFactory));
         }
 
         public CodeGenMethod Create(DecoratorMethodInformation factoryInformation)
         {
-            IEnumerable<CodeGenGeneric> genericTypes = factoryInformation.GenericTypes.Select(
+            IEnumerable<CodeGenGeneric> genericTypes = factoryInformation.GenericTypes?.Select(
                 parameter => FactoryHelpers.GenerateMethodParameter(parameter, factoryInformation.TypeConstraints)); 
             
-            IEnumerable<string> parameters = factoryInformation.Parameters.Select(parameter => $"{parameter.Type} {parameter.Name}");
+            IEnumerable<string> parameters = factoryInformation.Parameters?.Select(parameter => $"{parameter.Type} {parameter.Name}");
 
-            MethodTemplate matchingTemplate = _MethodTemplateSelector.Select(
-                factoryInformation.MethodName,
-                factoryInformation.ReturnType,
-                factoryInformation.Parameters.Select(parameter => parameter.Type).ToArray(),
-                factoryInformation.IsAsync);
+            MethodTemplate matchingTemplate = _SelectorFactory
+                .Create(factoryInformation.Templates)
+                .Select(
+                    factoryInformation.MethodName,
+                    factoryInformation.ReturnType,
+                    factoryInformation.Parameters?.Select(parameter => parameter.Type)?.ToArray(),
+                    factoryInformation.IsAsync);
 
             string body = matchingTemplate != null
                 ? GenerateDecoratorMethodBodyFromCondition(
@@ -60,7 +61,7 @@ namespace DecoMaker.Generation
             MethodTemplate template, 
             IEnumerable<MethodParameter> parameters)
         {
-            IEnumerable<string> paramNameList = parameters.Select(parameter => parameter.Name);
+            IEnumerable<string> paramNameList = parameters?.Select(parameter => parameter.Name) ?? new string[0];
             string invocation = $"_Decorated.{methodName}({string.Join(", ", paramNameList)})";
 
             string body = template.Body.Clone() as string;
@@ -79,7 +80,7 @@ namespace DecoMaker.Generation
 
         private string GenerateUndecoratedMethodBody(string methodName, IEnumerable<MethodParameter> parameters)
         {
-            IEnumerable<string> paramNameList = parameters.Select(parameter => parameter.Name);
+            IEnumerable<string> paramNameList = parameters?.Select(parameter => parameter.Name) ?? new string[0];
             return $"_Decorated.{methodName}({string.Join(", ", paramNameList)});";
         }
     }

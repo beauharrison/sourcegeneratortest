@@ -22,7 +22,7 @@ namespace DecoMaker.Generation
 
         public CodeGenClass Create(DecoratorClassInformation factoryInformation)
         {
-            IEnumerable<CodeGenGeneric> genericTypes = factoryInformation.GenericTypes.Select(
+            IEnumerable<CodeGenGeneric> genericTypes = factoryInformation.GenericTypes?.Select(
                 parameter => FactoryHelpers.GenerateMethodParameter(parameter, factoryInformation.TypeConstraints));
 
             string[] derivedFrom = !string.IsNullOrEmpty(factoryInformation.DerviedFrom) 

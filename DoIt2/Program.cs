@@ -25,11 +25,20 @@ namespace DoIt2
     public interface IService
     {
         int Run(string a);
+
+        long PpP { get; set; }
     }
 
     public class MyService : IService
     {
+        public long PpP { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public void Run()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int Run(string a)
         {
             throw new NotImplementedException();
         }
@@ -128,18 +137,18 @@ namespace DoIt2
         //    }
         //}
 
-        //public Decorated.Property.Any _AnyP2
-        //{
-        //    get
-        //    {
-        //        // pie
-        //        return Decorated.Property.Any.Value;
-        //    }
-        //    set
-        //    {
-        //        // adkdk
-        //        Decorated.Property.Any.Value = value;
-        //    }
-        //}
+        public Decorated.Property.Any _AnyP2
+        {
+            get
+            {
+                // pie
+                return Decorated.Property.Any.Value;
+            }
+            set
+            {
+                // adkdk
+                Decorated.Property.Any.Value = value;
+            }
+        }
     }
 }

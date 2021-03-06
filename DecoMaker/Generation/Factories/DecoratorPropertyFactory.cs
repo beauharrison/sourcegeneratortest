@@ -6,19 +6,21 @@ namespace DecoMaker.Generation
 {
     internal class DecoratorPropertyFactory : IDecoratorFactory<DecoratorPropertyInformation, CodeGenProperty>
     {
-        private readonly IPropertyTemplateSelector _PropertyTemplateSelector;
+        private readonly IPropertyTemplateSelectorFactory _PropertyTemplateSelectorFactory;
 
-        public DecoratorPropertyFactory(IPropertyTemplateSelector propertyTemplateSelector)
+        public DecoratorPropertyFactory(IPropertyTemplateSelectorFactory propertyTemplateSelectorFactory)
         {
-            _PropertyTemplateSelector = propertyTemplateSelector ?? throw new ArgumentNullException(nameof(propertyTemplateSelector));
+            _PropertyTemplateSelectorFactory = propertyTemplateSelectorFactory ?? throw new ArgumentNullException(nameof(propertyTemplateSelectorFactory));
         }
 
         public CodeGenProperty Create(DecoratorPropertyInformation factoryInformation)
         {
-            PropertyTemplate matchingTemplate = _PropertyTemplateSelector.Select(
-                factoryInformation.PropertyName,
-                factoryInformation.PropertyType,
-                factoryInformation.HasSetter);
+            PropertyTemplate matchingTemplate = _PropertyTemplateSelectorFactory
+                .Create(factoryInformation.Templates)
+                .Select(
+                    factoryInformation.PropertyName,
+                    factoryInformation.PropertyType,
+                    factoryInformation.HasSetter);
 
             string getterBody = matchingTemplate != null
                 ? GenerateDecoratorPropertyGetterBodyFromCondition(factoryInformation.PropertyName, matchingTemplate)
