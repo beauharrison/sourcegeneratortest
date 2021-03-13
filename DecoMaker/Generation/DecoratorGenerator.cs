@@ -4,12 +4,10 @@ using DecoMaker.Templating;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace DecoMaker.Generation
 {
@@ -26,8 +24,9 @@ namespace DecoMaker.Generation
             var methodFactory = new DecoratorMethodFactory(methodTemplateSelectorFactory);
             var propertyFactory = new DecoratorPropertyFactory(propertyTemplateSelectorFactory);
             var classFactory = new DecoratorClassFactory(methodFactory, propertyFactory);
-            
-            _NamespaceFactory = new DecoratorNamespaceFactory(classFactory);
+            var extensionFactory = new DecoratorExtensionClassFactory();
+
+            _NamespaceFactory = new DecoratorNamespaceFactory(classFactory, extensionFactory);
         }
 
         public void Initialize(GeneratorInitializationContext context)
@@ -60,37 +59,48 @@ namespace DecoMaker.Generation
 
                 if (validDecorateAttributes.Length == 0) continue;
 
-                foreach (AttributeSyntax decorateAttribute in validDecorateAttributes)
+                DecoratorNamespaceInformation[] factoryInformations = validDecorateAttributes
+                    .Select(decorateAttribute =>
+                    {
+                        ClassTemplate template = TemplateParser.Parse(semanticModel, typeSymbol, decorateAttribute);
+                        return GetDecoratorNamespaceFactoryInformation(typeToBeDecorated.TypeDeclaration, typeSymbol, template, semanticModel);
+                    })
+                    .ToArray();
+
+                foreach (DecoratorNamespaceInformation factoryInformation in factoryInformations)
                 {
-                    ClassTemplate template = TemplateParser.Parse(semanticModel, typeSymbol, decorateAttribute);
-                    GenerateDecoratorUsingTemplate(context, typeToBeDecorated.TypeDeclaration, typeSymbol, template, semanticModel);
+                    GenerateDecoratorUsingTemplate(context, factoryInformation);
                 }
             }
         }
 
         private void GenerateDecoratorUsingTemplate(
             GeneratorExecutionContext context,
+            DecoratorNamespaceInformation factoryInformation)
+        {
+            CodeGenNamespace generatedNamespace = _NamespaceFactory.Create(factoryInformation);
+            string generatedCodeString = generatedNamespace.GenerateCode();
+
+            SourceText sourceText = SourceText.From(generatedCodeString, Encoding.UTF8);
+            context.AddSource($"{factoryInformation.DecoratorName}.cs", sourceText);
+        }
+
+        private DecoratorNamespaceInformation GetDecoratorNamespaceFactoryInformation(
             TypeDeclarationSyntax typeDeclaration,
             ISymbol classSymbol,
             ClassTemplate template,
             SemanticModel semanticModel)
         {
             string decoratorName = $"{typeDeclaration.Identifier.Text}{template.Label}Decorator";
-            DecoratorClassInformation classInformation = GenerateDecoratorClassFactoryInformation(typeDeclaration, template, semanticModel);
+            DecoratorClassInformation classInformation = GetDecoratorClassFactoryInformation(typeDeclaration, template, semanticModel);
 
-            var factoryInformation = new DecoratorNamespaceInformation(
+            return new DecoratorNamespaceInformation(
                 classSymbol.ContainingNamespace.Name,
                 decoratorName,
                 classInformation);
-
-            CodeGenNamespace generatedNamespace = _NamespaceFactory.Create(factoryInformation);
-            string generatedCodeString = generatedNamespace.GenerateCode();
-
-            var sourceText = SourceText.From(generatedCodeString, Encoding.UTF8);
-            context.AddSource($"{decoratorName}.cs", sourceText);
         }
 
-        private DecoratorClassInformation GenerateDecoratorClassFactoryInformation(
+        private DecoratorClassInformation GetDecoratorClassFactoryInformation(
             TypeDeclarationSyntax typeDeclaration, 
             ClassTemplate template, 
             SemanticModel semanticModel)
@@ -101,14 +111,15 @@ namespace DecoMaker.Generation
                 constraintClause => constraintClause.Name.Identifier.Text,
                 constraintClause => constraintClause.Constraints.ToString());
 
-            string derivedFrom = typeDeclaration is InterfaceDeclarationSyntax ? typeDeclaration.Identifier.Text : null;
+            string decoratorType = typeDeclaration.Identifier.Text + typeDeclaration.TypeParameterList?.ToString();
+            string derivedFrom = typeDeclaration is InterfaceDeclarationSyntax ? decoratorType : null;
 
             return new DecoratorClassInformation(
                 genericTypes,
                 typeConstraints,
-                derivedFrom,
                 template,
-                typeDeclaration.Identifier.Text,
+                decoratorType,
+                derivedFrom,
                 GetMethodFactoryInformations(typeDeclaration, semanticModel).ToArray(),
                 GetPropertyFactoryInformation(typeDeclaration, semanticModel).ToArray());
         }

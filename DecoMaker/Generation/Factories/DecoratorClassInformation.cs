@@ -8,18 +8,18 @@ namespace DecoMaker.Generation
     {
         public DecoratorClassInformation(
             IEnumerable<string> genericTypes, 
-            IDictionary<string, string> typeConstraints, 
-            string derviedFrom, 
+            IDictionary<string, string> typeConstraints,
             ClassTemplate template, 
-            string decoratedTypeName, 
+            string decoratedType,
+            string derviedFrom,
             IEnumerable<DecoratorMethodInformation> methodInformation, 
             IEnumerable<DecoratorPropertyInformation> propertyInformation)
         {
             GenericTypes = genericTypes;
             TypeConstraints = typeConstraints ?? throw new ArgumentNullException(nameof(typeConstraints));
-            DerviedFrom = derviedFrom ;
             Template = template ?? throw new ArgumentNullException(nameof(template));
-            DecoratedTypeName = decoratedTypeName ?? throw new ArgumentNullException(nameof(decoratedTypeName));
+            DecoratedType = decoratedType ?? throw new ArgumentNullException(nameof(decoratedType));
+            DerviedFrom = derviedFrom;
             MethodInformation = methodInformation ?? throw new ArgumentNullException(nameof(methodInformation));
             PropertyInformation = propertyInformation ?? throw new ArgumentNullException(nameof(propertyInformation));
 
@@ -40,11 +40,11 @@ namespace DecoMaker.Generation
 
         public IDictionary<string, string> TypeConstraints { get; }
 
-        public string DerviedFrom { get; }
-
         public ClassTemplate Template { get; }
 
-        public string DecoratedTypeName { get; }
+        public string DecoratedType { get; }
+
+        public string DerviedFrom { get; }
 
         public IEnumerable<DecoratorMethodInformation> MethodInformation { get; }
 

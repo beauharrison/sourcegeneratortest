@@ -36,9 +36,9 @@ namespace DecoMaker.Generation
                 genericTypes,
                 derivedFrom);
 
-            generatedDecoratorClass.Comment = new CodeGenComment($@"Generated {factoryInformation.Template.Label} decorator for the {factoryInformation.DecoratedTypeName } type. Auto-generated on {DateTimeOffset.Now}");
+            generatedDecoratorClass.Comment = new CodeGenComment($@"Generated {factoryInformation.Template.Label} decorator for the {factoryInformation.DecoratedType } type. Auto-generated on {DateTimeOffset.Now}");
 
-            var constructorParams = new List<string>(new[] { $"{factoryInformation.DecoratedTypeName} decorated" });
+            var constructorParams = new List<string>(new[] { $"{factoryInformation.DecoratedType} decorated" });
             var constructorBodyBuilder = new StringBuilder();
 
             constructorBodyBuilder.AppendLine("_Decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));");
@@ -68,7 +68,7 @@ namespace DecoMaker.Generation
             // Decorated variable
             generatedDecoratorClass.Variables.Add(new CodeGenVariable(
                 "_Decorated",
-                factoryInformation.DecoratedTypeName,
+                factoryInformation.DecoratedType,
                 Scope.Private,
                 readOnly: true));
 

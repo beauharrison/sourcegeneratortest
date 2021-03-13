@@ -13,7 +13,8 @@ namespace DoIt2
 
             //new Class1ErrorDecorator(new Class1(), "jimmy", 44);
 
-            var a = new IServiceLoggerDecorator(new MyService());
+            IService<string> da = new MyService().DecorateWithLogging().DecorateWithErrorChecking().DecorateWithAuditing();
+            Class1SomethingDecorator<string> b = new Class1<string>().DecorateWithSomething();
         }
     }
 
@@ -21,15 +22,17 @@ namespace DoIt2
     {
     }
 
-    [Decorate("Logger", typeof(MyTemplate))]
-    public interface IService
+    [Decorate("Logging", typeof(MyTemplate))]
+    [Decorate("Auditing", typeof(MyTemplate))]
+    [Decorate("ErrorChecking", typeof(MyTemplate))]
+    public interface IService<T>
     {
         int Run(string a);
 
         long PpP { get; set; }
     }
 
-    public class MyService : IService
+    public class MyService : IService<string>
     {
         public long PpP { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -46,7 +49,7 @@ namespace DoIt2
 
     [Decorate("Error", typeof(MyTemplate))]
     [Decorate("Something", typeof(MyTemplate))]
-    public class Class1
+    public class Class1<T>
     {
         public string Method1()
         {

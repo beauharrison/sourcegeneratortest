@@ -69,7 +69,7 @@ namespace CodeGen
                 builder.Append(" ");
             }
 
-            var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;
+            var genericList = GenericTypes.Select(gt => gt.Name).ToTypeParamList();
 
             builder.Append($"class {Name}{genericList}");
 

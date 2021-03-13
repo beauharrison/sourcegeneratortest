@@ -58,7 +58,7 @@ namespace CodeGen
             builder.Append(style.Indent);
             builder.Append(Scope.ToString().ToLower());
 
-            var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;
+            var genericList = GenericTypes.Select(gt => gt.Name).ToTypeParamList();
             var argList = string.Join(", ", Parameters);
 
             builder.Append($" delegate {ReturnType} {Name}{genericList}({argList});");

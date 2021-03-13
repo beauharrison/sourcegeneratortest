@@ -82,8 +82,7 @@ namespace CodeGen
                 builder.Append("async ");
             }
 
-            var genericList = GenericTypes.Any() ? $"<{string.Join(", ", GenericTypes.Select(gt => gt.Name))}>" : string.Empty;
-
+            var genericList = GenericTypes.Select(gt => gt.Name).ToTypeParamList();
             var argList = string.Join(", ", Parameters);
 
             builder.AppendLine($"{ReturnType} {Name}{genericList}({argList})");
