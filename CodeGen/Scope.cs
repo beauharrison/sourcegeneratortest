@@ -3,6 +3,7 @@
     public enum Scope
     {
         Public,
+        Internal,
         Private
     }
 }

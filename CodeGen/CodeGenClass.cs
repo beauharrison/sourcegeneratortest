@@ -71,7 +71,7 @@ namespace CodeGen
 
             var genericList = GenericTypes.Select(gt => gt.Name).ToTypeParamList();
 
-            builder.Append($"class {Name}{genericList}");
+            builder.Append($"partial class {Name}{genericList}");
 
             if (DerivedFrom.Any())
             {
